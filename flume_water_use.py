@@ -1,0 +1,256 @@
+import os
+import csv
+import json
+import base64
+import requests
+import datetime
+import matplotlib.pyplot as plt
+import pytz
+import pandas as pd
+import shutil
+from dotenv import load_dotenv
+
+# === Load environment variables ===
+load_dotenv()
+USERNAME = os.getenv("FLUME_USERNAME")
+PASSWORD = os.getenv("FLUME_PASSWORD")
+CLIENT_ID = os.getenv("FLUME_CLIENT_ID")
+CLIENT_SECRET = os.getenv("FLUME_CLIENT_SECRET")
+SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
+HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+CSV_FILENAME = 'flume_usage_log.csv'
+HEARTBEAT_LOG = "flume_heartbeat_usage.log"
+CCF_CONVERSION = 748.05
+now = datetime.datetime.now(pytz.utc)
+
+# === Pool seasons
+POOL_SEASONS = [
+    {"year": 2023, "open": datetime.date(2023, 5, 26), "close": datetime.date(2023, 9, 3), "rate": 5.60},
+    {"year": 2024, "open": datetime.date(2024, 5, 24), "close": datetime.date(2024, 9, 1), "rate": 6.15},
+    {"year": 2025, "open": datetime.date(2025, 5, 23), "close": datetime.date(2025, 8, 31), "rate": 6.70},
+]
+
+def get_rate_for_date(date_str):
+    year = int(date_str[:4])
+    for s in POOL_SEASONS:
+        if s["year"] == year:
+            return s["rate"]
+    return 0
+
+def generate_sparkline(values):
+    bars = "▁▂▃▄▅▆▇█"
+    min_v, max_v = min(values), max(values)
+    span = max_v - min_v if max_v != min_v else 1
+    return ''.join(bars[round((v - min_v) / span * (len(bars) - 1))] for v in values)
+
+def format_usage_table(dates, values):
+    rows = ["```", "📊 14-Day Water Usage Summary:", "Date       |  Usage (CCF)  |   Cost", "-----------|---------------|---------"]
+    for d, v in zip(dates, values):
+        rate = get_rate_for_date(d) or 0
+        cost = v * rate
+        rows.append(f"{d} |     {v:6.2f}     | ${cost:7.2f}")
+    rows.append("```")
+    return "\n".join(rows)
+
+# === Load CSV log
+updated_data = {}
+with open(CSV_FILENAME, newline='') as f:
+    for row in csv.DictReader(f):
+        updated_data[row["date"]] = float(row["ccf"])
+
+# === Heartbeat check and post (first run of the day)
+HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+today_str = now.date().isoformat()
+
+already_sent = False
+if os.path.exists(HEARTBEAT_LOG):
+    with open(HEARTBEAT_LOG) as f:
+        already_sent = today_str in f.read()
+
+if not already_sent:
+    msg = f"✅ ❤️ `flume_usage_summary.py` ran on {today_str}"
+    payload = {
+        "channel": HEARTBEAT_CHANNEL,
+        "text": msg,
+        "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": msg}}]
+    }
+    response = requests.post("https://slack.com/api/chat.postMessage",
+                             headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
+                             json=payload)
+    with open(HEARTBEAT_LOG, "a") as f:
+        f.write(today_str + "\n")
+
+# === Authenticate with Flume
+auth = requests.post(
+    "https://api.flumetech.com/oauth/token",
+    data={
+        "grant_type": "password",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "username": USERNAME,
+        "password": PASSWORD,
+    }
+)
+access_token = auth.json()["data"][0]["access_token"]
+headers = {"Authorization": f"Bearer {access_token}"}
+user_id = json.loads(base64.urlsafe_b64decode(access_token.split('.')[1] + "=="))["user_id"]
+
+device = requests.get(f"https://api.flumetech.com/users/{user_id}/devices", headers=headers)
+device_id = [d for d in device.json()["data"] if d["type"] == 2][0]["id"]
+query_url = f"https://api.flumetech.com/users/{user_id}/devices/{device_id}/query"
+
+# === Pull and plot 14-day usage
+chart_payload = {
+    "queries": [{
+        "request_id": "chart",
+        "bucket": "DAY",
+        "since_datetime": (now - datetime.timedelta(days=14)).strftime('%Y-%m-%dT00:00:00Z'),
+        "until_datetime": now.strftime('%Y-%m-%dT23:59:59Z'),
+    }]
+}
+chart_resp = requests.post(query_url, headers=headers, json=chart_payload)
+chart_data = chart_resp.json()["data"][0]["chart"]
+chart_dates = [e["datetime"][:10] for e in chart_data]
+chart_values = [round(e["value"] / CCF_CONVERSION, 4) for e in chart_data]
+
+# Save 14-day chart
+plt.figure(figsize=(10, 6))
+plt.plot(chart_dates, chart_values, marker='o', color='teal')
+plt.title("Daily Water Usage – Last 14 Days (CCF)")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.grid()
+plt.savefig("flume_usage_chart.png")
+plt.close()
+
+# === Safely update CSV log with recent values
+csv_path = CSV_FILENAME
+backup_dir = "flume_log_backup"
+os.makedirs(backup_dir, exist_ok=True)
+timestamp = now.strftime("%Y%m%d_%H%M%S")
+backup_path = os.path.join(backup_dir, f"flume_usage_log.csv.{timestamp}.bak")
+shutil.copyfile(csv_path, backup_path)
+
+# === Read existing log
+existing = {}
+with open(csv_path, newline='') as f:
+    for row in csv.DictReader(f):
+        existing[row["date"]] = float(row["ccf"])
+
+# === Only overwrite within last 3 days
+cutoff = (now - datetime.timedelta(days=3)).date()
+new_entries = {}
+for entry in chart_data:
+    date_str = entry["datetime"][:10]
+    date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    value = round(entry["value"] / CCF_CONVERSION, 4)
+
+    if date_str not in existing or date_obj >= cutoff:
+        new_entries[date_str] = value
+    else:
+        new_entries[date_str] = existing[date_str]  # preserve old
+
+# === Write merged log, sorted by date
+merged = {**existing, **new_entries}
+with open(csv_path, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["date", "ccf"])
+    for d in sorted(merged):
+        writer.writerow([d, merged[d]])
+
+# === Pool season rolling average comparison
+df_rows = []
+with open(CSV_FILENAME, newline='') as f:
+    for row in csv.DictReader(f):
+        d = datetime.datetime.strptime(row["date"], "%Y-%m-%d").date()
+        df_rows.append({"date": d, "year": d.year, "ccf": float(row["ccf"])})
+df = pd.DataFrame(df_rows)
+
+records = []
+for season in POOL_SEASONS:
+    start = season["open"]
+    year = season["year"]
+    sub = df[(df["year"] == year) & (df["date"] >= start)].copy()
+    sub["date"] = pd.to_datetime(sub["date"])
+    start_ts = pd.to_datetime(start)
+    sub["days_since_open"] = (sub["date"] - start_ts).dt.days
+    sub.sort_values("date", inplace=True)
+    sub["rolling_avg"] = sub["ccf"].rolling(window=14).mean()
+    sub["label"] = str(year)
+    records.append(sub[["days_since_open", "rolling_avg", "label"]])
+
+combined = pd.concat(records)
+plt.figure(figsize=(10, 6))
+for label, group in combined.groupby("label"):
+    plt.plot(group["days_since_open"], group["rolling_avg"], label=label)
+plt.xlabel("Days Since Pool Open")
+plt.ylabel("Water Usage (CCF)")
+plt.grid(True)
+plt.legend(title="Year")
+plt.tight_layout()
+plt.savefig("flume_season_comparison.png")
+plt.close()
+
+# === Post Slack summary every Sunday
+if now.weekday() == 6:
+    today = datetime.date.today()
+    usage_by_date = {
+        datetime.datetime.strptime(d, "%Y-%m-%d").date(): ccf
+        for d, ccf in updated_data.items()
+    }
+
+    last7 = [v for d, v in usage_by_date.items() if 0 <= (today - d).days < 7]
+    last30 = [v for d, v in usage_by_date.items() if 0 <= (today - d).days < 30]
+
+    avg7 = sum(last7) / len(last7) if last7 else 0
+    avg30 = sum(last30) / len(last30) if last30 else 0
+    delta_pct = ((avg7 - avg30) / avg30 * 100) if avg30 else 0
+
+    comparison_line = (
+        f"*This week’s average use:* `{avg7:.2f} CCF/day` "
+        f"vs 30-day avg `{avg30:.2f} CCF/day` ({delta_pct:+.1f}%)"
+    )
+
+    # === Season cost projection
+    projection_line = None
+    season = next((s for s in POOL_SEASONS if s["open"] <= today <= s["close"]), None)
+    if season:
+        start, end, rate = season["open"], season["close"], season["rate"]
+        days_remaining = (end - today).days + 1
+        used_so_far = [v for d, v in usage_by_date.items() if start <= d <= today]
+        cost_so_far = sum(used_so_far) * rate
+        recent_avg = sum(chart_values) / len(chart_values) if chart_values else 0
+        projected_remaining_cost = recent_avg * days_remaining * rate
+
+        projection_line = (
+            f"💰 *Season-to-date spend:* `${cost_so_far:,.2f}`  \n"
+            f"🔮 *Projected remaining cost:* `${projected_remaining_cost:,.2f}` "
+            f"(based on {recent_avg:.2f} CCF/day average over last 14 days × "
+            f"{days_remaining} days @ ${rate:.2f}/CCF)"
+        )
+
+    # === Build Slack message
+    sparkline = generate_sparkline(chart_values)
+    usage_table = format_usage_table(chart_dates, chart_values)
+
+    blocks = [
+        {"type": "section", "text": {"type": "mrkdwn", "text": f"*14-Day Trend:* `{sparkline}`"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": usage_table}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": comparison_line}},
+    ]
+    if projection_line:
+        blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": projection_line}})
+
+    slack_payload = {
+        "channel": SLACK_CHANNEL,
+        "text": "14-Day Water Usage Summary",
+        "blocks": blocks
+    }
+
+    response = requests.post(
+        "https://slack.com/api/chat.postMessage",
+        headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
+        json=slack_payload
+    )
+    print("Slack post status:", response.status_code, response.json())
