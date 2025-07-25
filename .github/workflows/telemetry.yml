@@ -41,12 +41,11 @@ jobs:
       - name: Run dashboard update
         run: python dashboard_update.py
 
-      - name: Final commit of all artifacts
+      - name: Commit telemetry and dashboard updates
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # Add updated dashboard and telemetry
           git add docs/index.html
           git add docs/flume_usage_chart.png
           git add docs/flume_season_comparison.png
@@ -54,10 +53,14 @@ jobs:
           git add heartbeats/flume_heartbeat_usage.log
           git add flume_log_backup/
 
-          # Avoid push rejection due to stale repo
-          git pull --rebase origin main
-
           git commit -m "Telemetry + dashboard update from nightly run on $(date '+%Y-%m-%d')"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Push safely with smart rebase
+        run: |
+          git fetch origin main
+          git diff --quiet HEAD origin/main || git pull --rebase origin main
           git push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
