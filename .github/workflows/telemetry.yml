@@ -1,30 +1,29 @@
-name: Daily Telemetry & Dashboard Update
+name: Nightly Flume Usage Summary
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # Daily at 11PM CDT (5 UTC)
+    - cron: '0 4 * * *'  # 11:00 PM CDT (04:00 UTC)
   workflow_dispatch:
 
 jobs:
-  telemetry:
+  nightly_usage:
     runs-on: ubuntu-latest
     env:
       GH_REPO: brianhartsell/oakspool
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
       SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
+      FLUME_USERNAME: ${{ secrets.FLUME_USERNAME }}
+      FLUME_PASSWORD: ${{ secrets.FLUME_PASSWORD }}
+      FLUME_CLIENT_ID: ${{ secrets.FLUME_CLIENT_ID }}
+      FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Install dependencies
-        run: pip install requests python-dotenv
+        run: pip install matplotlib pandas requests python-dotenv pytz
 
-      - name: Run flume constant water check
-        run: python flume_constant_water_check.py
-
-      - name: Run flume water usage logger
+      - name: Run flume usage summary
         run: python flume_water_use.py
-
-      - name: Update and publish dashboard
-        run: python dashboard_update.py
