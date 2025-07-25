@@ -140,11 +140,6 @@ def push_to_github(filepath):
     status = "✅" if r.status_code in [200, 201] else f"⚠️ {r.json()}"
     print(f"{status} pushed {filepath}")
 
-# === Push dashboard files
-for fname in [os.path.basename(OUTPUT_HTML), os.path.basename(CHART_PATH), os.path.basename(SEASON_PATH)]:
-    push_to_github(f"{OUTPUT_DIR}/{fname}")
-    time.sleep(300)  # quick hack to stagger builds
-
 # === Slack notification
 def post_slack_heartbeat():
     if not SLACK_TOKEN or not SLACK_CHANNEL:
