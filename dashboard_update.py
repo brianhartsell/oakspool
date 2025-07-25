@@ -18,19 +18,12 @@ SLACK_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 TODAY = datetime.date.today()
 
 # === File paths (all local)
-CSV_LOG = "flume_usage_log.csv"
-CHART_PATH = "flume_usage_chart.png"
-SEASON_PATH = "flume_season_comparison.png"
+CSV_LOG = "logs/flume_usage_log.csv"
 OUTPUT_DIR = "docs"
 OUTPUT_HTML = os.path.join(OUTPUT_DIR, "index.html")
 
 # === Ensure docs folder exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-# === Copy charts to docs/
-for img in [CHART_PATH, SEASON_PATH]:
-    target = os.path.join(OUTPUT_DIR, os.path.basename(img))
-    shutil.copyfile(img, target)
 
 # === Load and filter usage data
 rows = []
