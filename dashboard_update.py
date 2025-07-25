@@ -21,6 +21,8 @@ TODAY = datetime.date.today()
 CSV_LOG = "logs/flume_usage_log.csv"
 OUTPUT_DIR = "docs"
 OUTPUT_HTML = os.path.join(OUTPUT_DIR, "index.html")
+CHART_PATH = "flume_usage_chart.png"
+SEASON_PATH = "flume_season_comparison.png"
 
 # === Ensure docs folder exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
