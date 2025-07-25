@@ -22,7 +22,9 @@ HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 CSV_FILENAME = 'flume_usage_log.csv'
 HEARTBEAT_LOG = "flume_heartbeat_usage.log"
 CCF_CONVERSION = 748.05
-now = datetime.datetime.now(pytz.utc)
+
+central = pytz.timezone('US/Central')
+now = datetime.datetime.now(pytz.utc).astimezone(central)
 
 # === Pool seasons
 POOL_SEASONS = [
@@ -100,12 +102,12 @@ device = requests.get(f"https://api.flumetech.com/users/{user_id}/devices", head
 device_id = [d for d in device.json()["data"] if d["type"] == 2][0]["id"]
 query_url = f"https://api.flumetech.com/users/{user_id}/devices/{device_id}/query"
 
-# === Pull and plot 14-day usage
+# === Pull and plot 30-day usage
 chart_payload = {
     "queries": [{
         "request_id": "chart",
         "bucket": "DAY",
-        "since_datetime": (now - datetime.timedelta(days=14)).strftime('%Y-%m-%dT00:00:00Z'),
+        "since_datetime": (now - datetime.timedelta(days=30)).strftime('%Y-%m-%dT00:00:00Z'),
         "until_datetime": now.strftime('%Y-%m-%dT23:59:59Z'),
     }]
 }
@@ -117,7 +119,7 @@ chart_values = [round(e["value"] / CCF_CONVERSION, 4) for e in chart_data]
 # Save 14-day chart
 plt.figure(figsize=(10, 6))
 plt.plot(chart_dates, chart_values, marker='o', color='teal')
-plt.title("Daily Water Usage – Last 14 Days (CCF)")
+plt.ylabel("Usage [CCF]")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.grid()
