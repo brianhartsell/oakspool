@@ -123,7 +123,7 @@ plt.ylabel("Usage [CCF]")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.grid()
-plt.savefig("flume_usage_chart.png")
+plt.savefig("docs/flume_usage_chart.png")
 plt.close()
 
 # === Safely update CSV log with recent values
@@ -191,7 +191,7 @@ plt.ylabel("Water Usage (CCF)")
 plt.grid(True)
 plt.legend(title="Year")
 plt.tight_layout()
-plt.savefig("flume_season_comparison.png")
+plt.savefig("docs/flume_season_comparison.png")
 plt.close()
 
 # === Post Slack summary every Sunday
