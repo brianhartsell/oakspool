@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import pytz
 import pandas as pd
 import shutil
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 # === Load environment variables ===
-load_dotenv()
+# load_dotenv()
 USERNAME = os.getenv("FLUME_USERNAME")
 PASSWORD = os.getenv("FLUME_PASSWORD")
 CLIENT_ID = os.getenv("FLUME_CLIENT_ID")
@@ -19,8 +19,8 @@ CLIENT_SECRET = os.getenv("FLUME_CLIENT_SECRET")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
-CSV_FILENAME = 'flume_usage_log.csv'
-HEARTBEAT_LOG = "flume_heartbeat_usage.log"
+CSV_FILENAME = 'logs/flume_usage_log.csv'
+HEARTBEAT_LOG = "heartbeats/flume_heartbeat_usage.log"
 CCF_CONVERSION = 748.05
 
 central = pytz.timezone('US/Central')
@@ -116,7 +116,7 @@ chart_data = chart_resp.json()["data"][0]["chart"]
 chart_dates = [e["datetime"][:10] for e in chart_data]
 chart_values = [round(e["value"] / CCF_CONVERSION, 4) for e in chart_data]
 
-# Save 14-day chart
+# Save chart
 plt.figure(figsize=(10, 6))
 plt.plot(chart_dates, chart_values, marker='o', color='teal')
 plt.ylabel("Usage [CCF]")
