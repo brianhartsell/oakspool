@@ -5,6 +5,9 @@ on:
     - cron: '0 4 * * *'  # 11 PM CDT = 04:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   telemetry:
     runs-on: ubuntu-latest
