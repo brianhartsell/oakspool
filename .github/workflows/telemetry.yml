@@ -53,3 +53,27 @@ jobs:
           git push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  dashboard:
+    runs-on: ubuntu-latest
+    needs: telemetry
+    env:
+      GH_REPO: brianhartsell/oakspool
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GH_BRANCH: main
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+  
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+  
+      - name: Install dependencies
+        run: pip install python-dotenv requests
+  
+      - name: Run dashboard update
+        run: python dashboard_update.py
