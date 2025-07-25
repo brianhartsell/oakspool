@@ -2,11 +2,11 @@ name: Nightly Flume Usage Summary
 
 on:
   schedule:
-    - cron: '0 4 * * *'  # 11:00 PM CDT (04:00 UTC)
+    - cron: '0 4 * * *'  # 11 PM CDT = 04:00 UTC
   workflow_dispatch:
 
 jobs:
-  nightly_usage:
+  telemetry:
     runs-on: ubuntu-latest
     env:
       GH_REPO: brianhartsell/oakspool
@@ -19,18 +19,23 @@ jobs:
       FLUME_CLIENT_ID: ${{ secrets.FLUME_CLIENT_ID }}
       FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: pip install matplotlib pandas requests python-dotenv pytz
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Run flume usage summary
+      - name: Install dependencies
+        run: |
+          pip install matplotlib pandas requests python-dotenv pytz
+
+      - name: Run Flume usage summary
         run: python flume_water_use.py
 
-        - name: Upload usage summary
-          uses: actions/upload-artifact@v4
-          with:
-            name: usage-summary
-            path: output/summary.txt
-
+      - name: Upload usage summary file
+        uses: actions/upload-artifact@v4
+        with:
+          name: flume-summary
+          path: output/summary.txt
