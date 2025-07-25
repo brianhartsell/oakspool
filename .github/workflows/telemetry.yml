@@ -77,3 +77,14 @@ jobs:
   
       - name: Run dashboard update
         run: python dashboard_update.py
+
+      - name: Commit updated dashboard
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add docs/index.html
+          git commit -m "Update dashboard from nightly run on $(date '+%Y-%m-%d')"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
