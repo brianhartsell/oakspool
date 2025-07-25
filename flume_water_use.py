@@ -26,12 +26,6 @@ CCF_CONVERSION = 748.05
 central = pytz.timezone('US/Central')
 now = datetime.datetime.now(pytz.utc).astimezone(central)
 
-print(f"Current working directory: {os.getcwd()}")
-
-os.makedirs("output", exist_ok=True)
-with open("output/summary.txt", "w") as f:
-    f.write("Water usage looks solid ✅")
-
 # === Pool seasons
 POOL_SEASONS = [
     {"year": 2023, "open": datetime.date(2023, 5, 26), "close": datetime.date(2023, 9, 3), "rate": 5.60},
