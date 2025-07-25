@@ -37,19 +37,12 @@ jobs:
       - name: Run Flume usage summary
         run: python flume_water_use.py
 
-      - name: Upload usage summary file
-        uses: actions/upload-artifact@v4
-        with:
-          name: flume-summary
-          path: output/summary.txt
-      
       - name: Commit output artifacts to repo
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
       
           # Ensure directories are visible to Git
-          git add output/summary.txt
           git add docs/flume_usage_chart.png
           git add docs/flume_season_comparison.png
           git add logs/flume_usage_log.csv
