@@ -147,7 +147,7 @@ def post_slack_heartbeat():
         return
 
     text = (
-        f"💧 Dashboard updated for {TODAY.strftime('%B %d')}\n"
+        f"💧 Dashboard updated for {TODAY.strftime('%B %d') from GitHub.}\n"
         f"🌐 https://brianhartsell.github.io/oakspool/\n\n"
     )
 
