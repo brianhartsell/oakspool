@@ -19,7 +19,7 @@ SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 CCF_CONVERSION = 748.05
-HEARTBEAT_LOG = "flume_heartbeat_constant.log"
+HEARTBEAT_LOG = "heartbeats/flume_heartbeat_constant.log"
 
 # === Local time and query range (NO UTC conversion)
 local_tz = get_localzone()
