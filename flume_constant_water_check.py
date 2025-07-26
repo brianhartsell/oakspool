@@ -37,7 +37,7 @@ print("Formatted for Flume:", since, "→", until)
 # === Heartbeat (log once per day)
 already_sent = os.path.exists(HEARTBEAT_LOG) and today_str in open(HEARTBEAT_LOG).read()
 if not already_sent:
-    msg = f"✅ ❤️ `flume_constant_water_check.py` ran on {today_str}"
+    msg = f"❤️ Constant water check is running on {today_str}"
     if not SILENT_MODE:
         payload = {
             "channel": HEARTBEAT_CHANNEL,
