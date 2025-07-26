@@ -1,16 +1,17 @@
-name: Constant Water Usage Check
+name: Flume Constant Water Check
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Every 15 minutes (UTC)
+    - cron: '*/30 * * * *'  # Every 15 minutes UTC
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  ping:
+  check-constant-water:
     runs-on: ubuntu-latest
+
     env:
       FLUME_USERNAME: ${{ secrets.FLUME_USERNAME }}
       FLUME_PASSWORD: ${{ secrets.FLUME_PASSWORD }}
@@ -18,6 +19,7 @@ jobs:
       FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+      SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
 
     steps:
       - name: Checkout repository
@@ -29,7 +31,19 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests python-dotenv pytz
+        run: |
+          pip install requests python-dotenv tzlocal
 
-      - name: Run water ping check
-        run: python flume_water_use.py
+      - name: Run Flume constant water check
+        run: python flume_constant_water_check.py
+
+      - name: Commit heartbeat file (if updated)
+        run: |
+          if git diff --quiet heartbeats/; then
+            echo "No heartbeat update — skipping commit."
+          else
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add heartbeats/
+            git commit -m "flume-constant: ❤️ daily @ $(date -u)"
+            git push
