@@ -71,7 +71,7 @@ if os.path.exists(HEARTBEAT_LOG):
         already_sent = today_str in f.read()
 
 if not already_sent:
-    msg = f"✅ ❤️ `flume_usage_summary.py` ran on {today_str}"
+    msg = f"❤️ Flume Updater ran {today_str} from GitHub."
     payload = {
         "channel": HEARTBEAT_CHANNEL,
         "text": msg,
