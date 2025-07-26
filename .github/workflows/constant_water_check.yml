@@ -1,0 +1,35 @@
+name: Constant Water Usage Check
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 15 minutes (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      FLUME_USERNAME: ${{ secrets.FLUME_USERNAME }}
+      FLUME_PASSWORD: ${{ secrets.FLUME_PASSWORD }}
+      FLUME_CLIENT_ID: ${{ secrets.FLUME_CLIENT_ID }}
+      FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests python-dotenv pytz
+
+      - name: Run water ping check
+        run: python flume_water_use.py
