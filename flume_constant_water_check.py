@@ -3,8 +3,8 @@ import json
 import base64
 import requests
 import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from tzlocal import get_localzone
 
 # === Config ===
 SILENT_MODE = False  # Set to False to send alerts to Slack
@@ -22,7 +22,7 @@ CCF_CONVERSION = 748.05
 HEARTBEAT_LOG = "heartbeats/flume_heartbeat_constant.log"
 
 # === Local time and query range (NO UTC conversion)
-local_tz = get_localzone()
+local_tz = ZoneInfo("America/Chicago")
 now = datetime.datetime.now(local_tz)
 since_dt = now - datetime.timedelta(hours=4)
 today_str = now.date().isoformat()
