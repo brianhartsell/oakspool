@@ -14,7 +14,7 @@ REPO = os.getenv("GH_REPO")
 TOKEN = os.getenv("GH_TOKEN")
 BRANCH = os.getenv("GH_BRANCH", "main")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
-SLACK_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 TODAY = datetime.date.today()
 
 # === File paths (all local)
