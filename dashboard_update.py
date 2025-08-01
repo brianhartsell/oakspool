@@ -15,6 +15,7 @@ TOKEN = os.getenv("GH_TOKEN")
 BRANCH = os.getenv("GH_BRANCH", "main")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
+HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 TODAY = datetime.date.today()
 
 # === File paths (all local)
@@ -118,30 +119,8 @@ html_content = f"""<!DOCTYPE html>
 with open(OUTPUT_HTML, "w") as f:
     f.write(html_content)
 
-# === GitHub upload helper
-def push_to_github(filepath):
-    url = f"https://api.github.com/repos/{REPO}/contents/{filepath}"
-    headers = {"Authorization": f"Bearer {TOKEN}"}
-    content = Path(filepath).read_bytes()
-    b64 = base64.b64encode(content).decode("utf-8")
-
-    # Check for existing file
-    sha = None
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200: sha = res.json().get("sha")
-
-    payload = {
-        "message": f"Update {filepath} on {TODAY.isoformat()}",
-        "content": b64,
-        "branch": BRANCH
-    }
-    if sha: payload["sha"] = sha
-    r = requests.put(url, headers=headers, json=payload)
-    status = "✅" if r.status_code in [200, 201] else f"⚠️ {r.json()}"
-    print(f"{status} pushed {filepath}")
-
 # === Slack notification
-def post_slack_heartbeat():
+def post_slack_update(post_channel):
     if not SLACK_TOKEN or not SLACK_CHANNEL:
         print("ℹ️ Slack config missing, skipping post.")
         return
@@ -156,15 +135,18 @@ def post_slack_heartbeat():
         "Content-Type": "application/json"
     }
     payload = {
-        "channel": SLACK_CHANNEL,
+        "channel": post_channel,
         "text": text
     }
 
     r = requests.post("https://slack.com/api/chat.postMessage", headers=headers, json=payload)
     if r.ok and r.json().get("ok"):
-        print("📣 Slack heartbeat sent.")
+        print("📣 Slack update sent.")
     else:
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
-# === Fire off Slack ping
-post_slack_heartbeat()
+# === Fire off Slack ping on Sunday only:
+if now.weekday() == 6:
+    post_slack_update(SLACK_CHANNEL)
+else:
+    post_slack_update(HEARTBEAT_CHANNEL)
