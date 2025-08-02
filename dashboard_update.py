@@ -146,7 +146,7 @@ def post_slack_update(post_channel):
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
 # === Fire off Slack ping on Sunday only:
-if now.weekday() == 6:
+if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
