@@ -16,7 +16,7 @@ jobs:
       FLUME_CLIENT_ID: ${{ secrets.FLUME_CLIENT_ID }}
       FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
       SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
 
     steps:
