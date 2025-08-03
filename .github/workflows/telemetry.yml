@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -55,10 +57,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Push safely with smart rebase
+      - name: Push safely to dev
         run: |
-          git fetch origin main
-          git diff --quiet HEAD origin/main || git pull --rebase origin main
-          git push
+          git fetch origin dev
+          git diff --quiet HEAD origin/dev || git pull --rebase origin dev
+          git push origin dev
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
