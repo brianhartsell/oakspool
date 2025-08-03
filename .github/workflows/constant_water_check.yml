@@ -1,8 +1,6 @@
 name: Flume Constant Water Check
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # Every 15 minutes UTC
   workflow_dispatch:
 
 permissions:
