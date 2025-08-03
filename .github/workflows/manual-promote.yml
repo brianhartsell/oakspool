@@ -1,0 +1,32 @@
+name: Manual Promote Main Scripts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Pull specific files from dev
+        run: |
+          git fetch origin dev
+          git checkout origin/dev -- dashboard_update.py flume_constant_water_check.py flume_water_use.py # 👈 update paths as needed
+          git add dashboard_update.py flume_constant_water_check.py flume_water_use.py
+          git commit -m "Manually promoted main scripts from dev"
+          git push origin main
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
