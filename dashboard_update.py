@@ -7,6 +7,7 @@ import base64
 from pathlib import Path
 from dotenv import load_dotenv
 import time
+import pytz
 
 # === Load config from .env ===
 load_dotenv()
@@ -16,7 +17,6 @@ BRANCH = os.getenv("GH_BRANCH", "main")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
-TODAY = datetime.date.today()
 
 # === File paths (all local)
 CSV_LOG = "logs/flume_usage_log.csv"
@@ -28,19 +28,9 @@ SEASON_PATH = "flume_season_comparison.png"
 # === Ensure docs folder exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# === Load and filter usage data
-rows = []
-with open(CSV_LOG, newline="") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        date_obj = datetime.datetime.strptime(row["date"], "%Y-%m-%d").date()
-        if 0 <= (TODAY - date_obj).days < 30:
-            rows.append({
-                "date": row["date"],
-                "ccf": float(row["ccf"]),
-                "rate": None,
-                "cost": 0.0
-            })
+# === Set date, system is not UTC
+central = pytz.timezone("US/Central")
+TODAY = datetime.datetime.now(central).date()
 
 # === Pool season rates
 SEASONS = [
@@ -55,37 +45,54 @@ def get_rate(date_str):
             return s["rate"]
     return 0.0
 
-# === Enrich rows with rate and cost
-for r in rows:
-    r["rate"] = get_rate(r["date"])
-    r["cost"] = round(r["ccf"] * r["rate"], 2)
+# === Load full usage log
+all_rows = []
+with open(CSV_LOG, newline="") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        date_str = row["date"]
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+        ccf = float(row["ccf"])
+        rate = get_rate(date_str)
+        cost = round(ccf * rate, 2)
+        all_rows.append({
+            "date": date_str,
+            "date_obj": date_obj,
+            "ccf": ccf,
+            "rate": rate,
+            "cost": cost
+        })
 
-# === Build usage table HTML
+# === Slice for last 30 days only
+recent_rows = [r for r in all_rows if 0 <= (TODAY - r["date_obj"]).days < 30]
+
+# === Build usage table HTML from recent_rows
 table_rows = "\n".join([
-    f"<tr><td>{r['date']}</td><td>{r['ccf']:.2f}</td><td>${r['cost']:.2f}</td></tr>" for r in rows
+    f"<tr><td>{r['date']}</td><td>{r['ccf']:.2f}</td><td>${r['cost']:.2f}</td></tr>"
+    for r in recent_rows
 ])
-usage_table_html = f"""
-<h3>📅 Last 30 Days of Use</h3>
+usage_table_html = f"""<h3>📅 Last 30 Days of Use</h3>
 <table border="1" cellpadding="6" cellspacing="0">
     <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
     <tbody>{table_rows}</tbody>
 </table>
 """
 
-# === Generate season summary
+# === Generate season summary using full all_rows slice
 season = next((s for s in SEASONS if s["open"] <= TODAY <= s["close"]), None)
 projection_html = ""
 if season:
-    used = [r["ccf"] for r in rows if season["open"].isoformat() <= r["date"] <= TODAY.isoformat()]
+    season_rows = [r for r in all_rows if season["open"] <= r["date_obj"] <= TODAY]
+    used_ccf = sum(r["ccf"] for r in season_rows)
     days_left = (season["close"] - TODAY).days + 1
-    recent_avg = sum([r["ccf"] for r in rows]) / len(rows)
-    cost_so_far = sum(used) * season["rate"]
-    projected = recent_avg * days_left * season["rate"]
+    recent_avg = sum(r["ccf"] for r in recent_rows) / len(recent_rows) if recent_rows else 0.0
+    cost_so_far = used_ccf * season["rate"]
+    projected_cost = recent_avg * days_left * season["rate"]
     projection_html = f"""
     <h3>💰 Season Usage Summary</h3>
     <ul>
         <li><strong>Cost so far:</strong> ${cost_so_far:,.2f}</li>
-        <li><strong>Projected remaining cost:</strong> ${projected:,.2f}</li>
+        <li><strong>Projected remaining cost:</strong> ${projected_cost:,.2f}</li>
         <li>Based on {recent_avg:.2f} CCF/day × {days_left} days @ ${season['rate']:.2f}/CCF</li>
     </ul>
     """
