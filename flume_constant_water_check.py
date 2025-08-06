@@ -85,12 +85,25 @@ for entry in resp.get("data", []):
 
 minute_values = [round(e["value"] / CCF_CONVERSION, 4) for e in results.get("min_check", [])]
 hour_values = [round(e["value"] / CCF_CONVERSION, 4) for e in results.get("hour_check", [])]
-
-min_nonzero = all(v > 0 for v in minute_values)
 hour_total = sum(hour_values)
 
+total_minutes = len(minute_values)
+zero_count = sum(v == 0 for v in minute_values)
+
+print(f"🧮 Minute readings received: {total_minutes}")
+print(f"🕳️ Zero-flow minutes: {zero_count}")
+
+# === Evaluate minute-level density
+total_minutes = len(minute_values)
+zero_count = sum(v == 0 for v in minute_values)
+nonzero_pct = 100 * (1 - zero_count / total_minutes) if total_minutes else 0
+
+print(f"Readings received: {total_minutes}")
+print(f"Zero-flow minutes: {zero_count}")
+print(f"Non-zero percentage: {nonzero_pct:.2f}%")
+
 # === Alert logic
-if not SILENT_MODE and min_nonzero:
+if not SILENT_MODE and nonzero_pct >= 95:
     msg = (
         f"🚰 *Water flow alert: 4 hours continuous*\n"
         f"Total use: `{hour_total:.2f} CCF`"
@@ -119,3 +132,5 @@ elif not SILENT_MODE and hour_total > 0 and not minute_values:
                   json=payload)
 else:
     print("Water quiet or silent mode active — no alert sent.")
+
+
