@@ -85,6 +85,7 @@ for entry in resp.get("data", []):
 
 minute_values = [round(e["value"] / CCF_CONVERSION, 4) for e in results.get("min_check", [])]
 hour_values = [round(e["value"] / CCF_CONVERSION, 4) for e in results.get("hour_check", [])]
+hour_total = sum(hour_values)
 
 total_minutes = len(minute_values)
 zero_count = sum(v == 0 for v in minute_values)
@@ -131,5 +132,6 @@ elif not SILENT_MODE and hour_total > 0 and not minute_values:
                   json=payload)
 else:
     print("Water quiet or silent mode active — no alert sent.")
+
 
 
