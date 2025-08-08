@@ -155,7 +155,7 @@ html_content = f"""<!DOCTYPE html>
         <h3>Chemical History</h3>
         <p>Plots below are auto-generated from test logs.</p>
         <img src="ph.png" alt="pH Levels">
-        <img src="chlorine_plot.png" alt="Chlorine Levels">
+        <img src="chlorine.png" alt="Chlorine Levels">
         <img src="alkalinity.png" alt="Alkalinity">
         <img src="cyanuric_acid.png" alt="CYA Levels">
         <img src="calcium.png" alt="Calcium Levels">
@@ -205,4 +205,5 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
