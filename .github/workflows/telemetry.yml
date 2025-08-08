@@ -21,7 +21,10 @@ jobs:
       FLUME_PASSWORD: ${{ secrets.FLUME_PASSWORD }}
       FLUME_CLIENT_ID: ${{ secrets.FLUME_CLIENT_ID }}
       FLUME_CLIENT_SECRET: ${{ secrets.FLUME_CLIENT_SECRET }}
-
+      LESLIES_USERNAME: ${{ secrets.LESLIES_USERNAME }}
+      LESLIES_PASSWORD: ${{ secrets.LESLIES_PASSWORD }}
+      LESLIES_POOLID: ${{ secrets.LESLIES_POOLID }}
+      LESLIES_POOLNAME: ${{ secrets.LESLIES_POOLNAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -38,6 +41,9 @@ jobs:
       - name: Run Flume usage summary
         run: python flume_water_use.py
 
+      - name: Run Leslies Summary
+        run: python leslies-log-and-plot.py       
+
       - name: Run dashboard update
         run: python dashboard_update.py
 
@@ -53,6 +59,16 @@ jobs:
           git add heartbeats/flume_heartbeat_usage.log
           git add flume_log_backup/
 
+          git add logs/leslies-log.csv
+          git add docs/alkalinity.png
+          git add docs/calcium.png
+          git add docs/chlorine.png
+          git add docs/copper.png
+          git add docs/cyanuric_acid.png
+          git add docs/iron.png
+          git add docs/ph.png
+          git add docs/phosphates.png
+          
           git commit -m "Telemetry + dashboard update from nightly run on $(date '+%Y-%m-%d')"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
