@@ -9,14 +9,44 @@
         table { border-collapse: collapse; width: 100%; }
         th, td { text-align: center; padding: 0.5em; }
         th { background-color: #f2f2f2; }
+        .tabs { display: flex; gap: 1em; margin-bottom: 2em; }
+        .tab-button {
+            padding: 0.5em 1em;
+            background-color: #eee;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tab-button.active { background-color: #ccc; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+        }
+        window.onload = function() {
+            showTab('water');
+        };
+    </script>
 </head><body>
     <h1>💧 Flume Water Dashboard</h1>
-    <h3>📈 Daily Usage – Last 30 Days</h3>
-    <img src="flume_usage_chart.png" alt="Usage Chart">
-    <h3>📊 Pool Season Comparison</h3>
-    <img src="flume_season_comparison.png" alt="Season Chart">
-    <h3>📅 Last 30 Days of Use</h3>
+
+    <div class="tabs">
+        <button class="tab-button" id="btn-water" onclick="showTab('water')">Water Use</button>
+        <button class="tab-button" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
+        <button class="tab-button" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump House</button>
+    </div>
+
+    <div id="water" class="tab-content">
+        <h3>Daily Usage – Last 30 Days</h3>
+        <img src="flume_usage_chart.png" alt="Usage Chart">
+        <h3>Pool Season Comparison</h3>
+        <img src="flume_season_comparison.png" alt="Season Chart">
+        <h3>📅 Last 30 Days of Use</h3>
 <table border="1" cellpadding="6" cellspacing="0">
     <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
     <tbody><tr><td>2025-07-10</td><td>27.95</td><td>$187.30</td></tr>
@@ -48,16 +78,34 @@
 <tr><td>2025-08-05</td><td>38.21</td><td>$255.98</td></tr>
 <tr><td>2025-08-06</td><td>14.25</td><td>$95.45</td></tr>
 <tr><td>2025-08-07</td><td>0.14</td><td>$0.91</td></tr>
-<tr><td>2025-08-08</td><td>0.17</td><td>$1.11</td></tr></tbody>
+<tr><td>2025-08-08</td><td>0.18</td><td>$1.19</td></tr></tbody>
 </table>
 
-    
+        
     <h3>💰 Season Usage Summary</h3>
     <ul>
-        <li><strong>Cost so far:</strong> $2,381.55</li>
-        <li><strong>Projected remaining cost:</strong> $1,023.05</li>
+        <li><strong>Cost so far:</strong> $2,381.63</li>
+        <li><strong>Projected remaining cost:</strong> $1,023.12</li>
         <li>Based on 6.36 CCF/day × 24 days @ $6.70/CCF</li>
     </ul>
     
-    <p><em>Dashboard auto-updated on 2025-08-08</em></p>
+        <p><em>Dashboard auto-updated on 2025-08-08</em></p>
+    </div>
+
+    <div id="chemicals" class="tab-content">
+        <h3>Chemical History</h3>
+        <p>Plots below are auto-generated from test logs.</p>
+        <img src="ph.png" alt="pH Levels">
+        <img src="chlorine_plot.png" alt="Chlorine Levels">
+        <img src="alkalinity.png" alt="Alkalinity">
+        <img src="cyanuric_acid.png" alt="CYA Levels">
+        <img src="calcium.png" alt="Calcium Levels">
+        <img src="copper.png" alt="Copper Levels">
+        <img src="iron.png" alt="Iron Levels">
+    </div>
+
+    <div id="pumphouse" class="tab-content">
+        <h3>🏠 Pump House</h3>
+        <p>Coming soon: pump status, runtime logs, and filter pressure trends.</p>
+    </div>
 </body></html>
