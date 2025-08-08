@@ -12,6 +12,12 @@ from api import LesliesPoolApi
 LOG_DIR    = "logs"
 CSV_FILE   = os.path.join(LOG_DIR, "leslies-log.csv")
 DOCS_DIR   = "docs"
+
+USERNAME = os.getenv("LESLIES_USERNAME")
+PASSWORD = os.getenv("LESLIES_PASSWORD")
+POOLID = os.getenv("LESLIES_POOLID")
+POOLNAME = os.getenv("LESLIES_POOLNAME")
+
 FIELDNAMES = [
     "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
     "calcium", "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store"
@@ -116,10 +122,10 @@ def plot_last_30_days(csv_path: str):
 def main():
     # 1) Fetch & log new data
     api = LesliesPoolApi(
-        username="info@oaksrecclub.org",
-        password="WaterTest25!",
-        pool_profile_id="6285354",
-        pool_name="Oaks+Rec+Club"
+        username=USERNAME,
+        password=PASSWORD,
+        pool_profile_id=POOLID,
+        pool_name=POOLNAME
     )
     if not api.authenticate():
         raise RuntimeError("⚠️ Leslie’s login failed")
@@ -135,4 +141,5 @@ def main():
     plot_last_30_days(CSV_FILE)
 
 if __name__ == "__main__":
+
     main()
