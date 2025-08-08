@@ -115,8 +115,8 @@ html_content = f"""<!DOCTYPE html>
         }};
     </script>
 </head><body>
-    <h1>💧 Flume Water Dashboard</h1>
-
+    <h1>Oaks Pool Dashboard</h1>
+    
     <div class="tabs">
         <button class="tab-button" id="btn-water" onclick="showTab('water')">Water Use</button>
         <button class="tab-button" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
@@ -187,6 +187,7 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
