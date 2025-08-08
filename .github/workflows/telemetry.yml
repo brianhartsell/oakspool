@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install matplotlib pandas requests python-dotenv pytz
+          pip install beautifulsoup4 matplotlib pandas requests python-dotenv pytz
 
       - name: Run Flume usage summary
         run: python flume_water_use.py
