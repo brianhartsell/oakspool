@@ -101,7 +101,7 @@ if season:
 html_content = f"""<!DOCTYPE html>
 <html><head>
     <meta charset="UTF-8">
-    <title>💧 Flume Water Dashboard</title>
+    <title>Oaks Pool Dashboard</title>
     <style>
         body {{ font-family: sans-serif; padding: 2em; max-width: 900px; margin: auto; }}
         h1, h2, h3 {{ margin-top: 2em; }}
@@ -110,14 +110,22 @@ html_content = f"""<!DOCTYPE html>
         th, td {{ text-align: center; padding: 0.5em; }}
         th {{ background-color: #f2f2f2; }}
         .tabs {{ display: flex; gap: 1em; margin-bottom: 2em; }}
-        .tab-button {{
-            padding: 0.5em 1em;
+        .tab-button {
+            padding: 0.75em 1.5em;
+            font-size: 1.1em;
             background-color: #eee;
             border: none;
             cursor: pointer;
             font-weight: bold;
-        }}
-        .tab-button.active {{ background-color: #ccc; }}
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+        .tab-button.active {
+            background-color: #ccc;
+        }
         .tab-content {{ display: none; }}
         .tab-content.active {{ display: block; }}
     </style>
@@ -205,5 +213,6 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
