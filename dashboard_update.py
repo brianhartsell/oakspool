@@ -101,6 +101,7 @@ if season:
 html_content = f"""<!DOCTYPE html>
 <html><head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
     <title>Oaks Pool Dashboard</title>
     <script>
         function showTab(tabId) {{
@@ -186,6 +187,7 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
