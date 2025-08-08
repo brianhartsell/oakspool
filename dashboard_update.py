@@ -109,16 +109,64 @@ html_content = f"""<!DOCTYPE html>
         table {{ border-collapse: collapse; width: 100%; }}
         th, td {{ text-align: center; padding: 0.5em; }}
         th {{ background-color: #f2f2f2; }}
+        .tabs {{ display: flex; gap: 1em; margin-bottom: 2em; }}
+        .tab-button {{
+            padding: 0.5em 1em;
+            background-color: #eee;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }}
+        .tab-button.active {{ background-color: #ccc; }}
+        .tab-content {{ display: none; }}
+        .tab-content.active {{ display: block; }}
     </style>
+    <script>
+        function showTab(tabId) {{
+            document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+        }}
+        window.onload = function() {{
+            showTab('water');
+        }};
+    </script>
 </head><body>
     <h1>💧 Flume Water Dashboard</h1>
-    <h3>📈 Daily Usage – Last 30 Days</h3>
-    <img src="{os.path.basename(CHART_PATH)}" alt="Usage Chart">
-    <h3>📊 Pool Season Comparison</h3>
-    <img src="{os.path.basename(SEASON_PATH)}" alt="Season Chart">
-    {usage_table_html}
-    {projection_html}
-    <p><em>Dashboard auto-updated on {TODAY.isoformat()}</em></p>
+
+    <div class="tabs">
+        <button class="tab-button" id="btn-water" onclick="showTab('water')">Water Use</button>
+        <button class="tab-button" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
+        <button class="tab-button" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump House</button>
+    </div>
+
+    <div id="water" class="tab-content">
+        <h3>Daily Usage – Last 30 Days</h3>
+        <img src="{os.path.basename(CHART_PATH)}" alt="Usage Chart">
+        <h3>Pool Season Comparison</h3>
+        <img src="{os.path.basename(SEASON_PATH)}" alt="Season Chart">
+        {usage_table_html}
+        {projection_html}
+        <p><em>Dashboard auto-updated on {TODAY.isoformat()}</em></p>
+    </div>
+
+    <div id="chemicals" class="tab-content">
+        <h3>Chemical History</h3>
+        <p>Plots below are auto-generated from test logs.</p>
+        <img src="ph.png" alt="pH Levels">
+        <img src="chlorine_plot.png" alt="Chlorine Levels">
+        <img src="alkalinity.png" alt="Alkalinity">
+        <img src="cyanuric_acid.png" alt="CYA Levels">
+        <img src="calcium.png" alt="Calcium Levels">
+        <img src="copper.png" alt="Copper Levels">
+        <img src="iron.png" alt="Iron Levels">
+    </div>
+
+    <div id="pumphouse" class="tab-content">
+        <h3>🏠 Pump House</h3>
+        <p>Coming soon: pump status, runtime logs, and filter pressure trends.</p>
+    </div>
 </body></html>
 """
 
@@ -157,3 +205,4 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
