@@ -141,11 +141,16 @@ def build_test_summary(data):
         val = data.get(key)
         try:
             val_float = float(val)
-            low, high = TARGET_RANGES[key]
-            if low <= val_float <= high:
-                emoji = "✅"
+            low, high = TARGET_RANGES.get(key, (None, None))
+            c_low, c_high = CLOSURE_LIMITS.get(key, (None, None))
+
+            if c_low is not None and (val_float < c_low or val_float > c_high):
+                emoji = "🚨"  # Closure condition
+            elif low is not None and low <= val_float <= high:
+                emoji = "✅"  # Recommended range
             else:
-                emoji = "❗️"
+                emoji = "❗️"  # Caution zone
+
             lines.append(f"{emoji} {key.replace('_', ' ').title()}: {val}")
         except (TypeError, ValueError):
             lines.append(f"❓ {key.replace('_', ' ').title()}: {val}")
@@ -192,8 +197,14 @@ def main():
     else:
         append_to_csv(data)
         summary = build_test_summary(data)
+    
         slack_text = f"New water test logged on {data['test_date']}:\n{summary}"
         post_slack_message(SLACK_CHANNEL, slack_text)
+    
+        # 🚨 Check for closure-level readings
+        if "🚨" in summary:
+            alert_text = f"🚨One or more readings are outside operating limits.\nFix immediately!"
+            post_slack_message(SLACK_CHANNEL, alert_text)
 
     # 2) Plot last 30 days
     print("📊 Generating 30-day plots…")
@@ -202,6 +213,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
