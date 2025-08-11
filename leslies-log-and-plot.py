@@ -19,7 +19,7 @@ PASSWORD = os.getenv("LESLIES_PASSWORD")
 POOLID = os.getenv("LESLIES_POOLID")
 POOLNAME = os.getenv("LESLIES_POOLNAME")
 SLACK_TOKEN = os.getenv("SLACK_TOKEN")
-HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 
 
 FIELDNAMES = [
@@ -181,8 +181,7 @@ def main():
         append_to_csv(data)
         summary = build_test_summary(data)
         slack_text = f"New water test logged on {data['test_date']}:\n{summary}"
-        post_slack_message(HEARTBEAT_CHANNEL, slack_text)
-
+        post_slack_message(SLACK_CHANNEL, slack_text)
 
     # 2) Plot last 30 days
     print("📊 Generating 30-day plots…")
@@ -191,4 +190,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
