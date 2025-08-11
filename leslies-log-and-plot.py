@@ -81,19 +81,6 @@ def plot_last_30_days(csv_path: str):
         "in_store":      ["in_store"]
     }
 
-    TARGET_RANGES = {
-        "free_chlorine": (1, 4),
-        "total_chlorine": (1, 4),
-        "ph": (7.2, 7.8),
-        "alkalinity": (80, 120),
-        "calcium": (200, 400),
-        "cyanuric_acid": (30, 100),
-        "iron": (0, 0.2),
-        "copper": (0, 0.2),
-        "phosphates": (0, 100),
-        "salt": (2500, 3500)
-    }
-
     for name, cols in plots.items():
         plt.figure(figsize=(10, 4))
 
@@ -190,6 +177,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
