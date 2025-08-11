@@ -1,6 +1,7 @@
 import os
 import csv
 from datetime import datetime, timedelta
+import requests
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +18,9 @@ USERNAME = os.getenv("LESLIES_USERNAME")
 PASSWORD = os.getenv("LESLIES_PASSWORD")
 POOLID = os.getenv("LESLIES_POOLID")
 POOLNAME = os.getenv("LESLIES_POOLNAME")
+SLACK_TOKEN = os.getenv("SLACK_TOKEN")
+HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+
 
 FIELDNAMES = [
     "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
@@ -117,6 +121,46 @@ def plot_last_30_days(csv_path: str):
         plt.close()
         print(f"  • Saved plot: {out_path}")
 
+def build_test_summary(data):
+    keys = ["ph", "free_chlorine", "alkalinity", "cyanuric_acid"]
+    lines = []
+
+    for key in keys:
+        val = data.get(key)
+        try:
+            val_float = float(val)
+            low, high = TARGET_RANGES[key]
+            if low <= val_float <= high:
+                emoji = "✅"
+            else:
+                emoji = "❗️"
+            lines.append(f"{emoji} {key.replace('_', ' ').title()}: {val}")
+        except (TypeError, ValueError):
+            lines.append(f"❓ {key.replace('_', ' ').title()}: {val}")
+
+    return "\n".join(lines)
+
+def post_slack_message(channel, text):
+    if not SLACK_TOKEN or not channel:
+        print("ℹ️ Slack config missing, skipping post.")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {SLACK_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "channel": channel,
+        "text": text
+    }
+
+    r = requests.post("https://slack.com/api/chat.postMessage", headers=headers, json=payload)
+    if r.ok and r.json().get("ok"):
+        print("📣 Slack update sent.")
+    else:
+        print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
+
+
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -135,6 +179,10 @@ def main():
         print(f"ℹ️  Already logged {data['test_date']}")
     else:
         append_to_csv(data)
+        summary = build_test_summary(data)
+        slack_text = f"New water test logged on {data['test_date']}:\n{summary}"
+        post_slack_message(HEARTBEAT_CHANNEL, slack_text)
+
 
     # 2) Plot last 30 days
     print("📊 Generating 30-day plots…")
@@ -143,3 +191,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
