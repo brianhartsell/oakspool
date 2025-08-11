@@ -122,7 +122,7 @@ def plot_last_30_days(csv_path: str):
         print(f"  • Saved plot: {out_path}")
 
 def build_test_summary(data):
-    keys = ["ph", "free_chlorine", "alkalinity", "cyanuric_acid"]
+    keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
     lines = []
 
     for key in keys:
@@ -190,5 +190,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
