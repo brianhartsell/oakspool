@@ -18,7 +18,7 @@ USERNAME = os.getenv("LESLIES_USERNAME")
 PASSWORD = os.getenv("LESLIES_PASSWORD")
 POOLID = os.getenv("LESLIES_POOLID")
 POOLNAME = os.getenv("LESLIES_POOLNAME")
-SLACK_TOKEN = os.getenv("SLACK_TOKEN")
+SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 
 
@@ -190,6 +190,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
