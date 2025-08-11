@@ -40,6 +40,11 @@ TARGET_RANGES = {
     "salt": (2500, 3500)
 }
 
+CLOSURE_LIMITS = {
+    "total_chlorine": (0.5, 5),
+    "ph": (6.8, 8.2)
+}
+
 os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(DOCS_DIR, exist_ok=True)
 
@@ -84,17 +89,37 @@ def plot_last_30_days(csv_path: str):
     for name, cols in plots.items():
         plt.figure(figsize=(10, 4))
 
-        # Draw target bands for each field
         for col in cols:
             if col in TARGET_RANGES:
                 low, high = TARGET_RANGES[col]
-                plt.axhspan(low, high, color="green", alpha=0.1, label=f"{col} target")
+                plt.axhspan(low, high, color="green", alpha=0.1, label=f"{col} recommended")
+
+                # Add caution zone if closure limits exist
+                if col in CLOSURE_LIMITS:
+                    c_low, c_high = CLOSURE_LIMITS[col]
+
+                    # Below recommended but above closure
+                    if c_low < low:
+                        plt.axhspan(c_low, low, color="yellow", alpha=0.1, label=f"{col} caution (low)")
+                    # Above recommended but below closure
+                    if c_high > high:
+                        plt.axhspan(high, c_high, color="yellow", alpha=0.1, label=f"{col} caution (high)")
+
+                    # Closure zones
+                    plt.axhspan(0, c_low, color="red", alpha=0.05, label=f"{col} closure (low)")
+                    plt.axhspan(c_high, recent[col].max(), color="red", alpha=0.05, label=f"{col} closure (high)")
 
         # Plot actual data
         for col in cols:
             if col in recent.columns:
                 y = pd.to_numeric(recent[col], errors="coerce")
                 plt.plot(recent["test_date"], y, marker="o", label=col)
+
+                # Highlight closure points
+                if col in CLOSURE_LIMITS:
+                    c_low, c_high = CLOSURE_LIMITS[col]
+                    mask = (y < c_low) | (y > c_high)
+                    plt.scatter(recent["test_date"][mask], y[mask], color="red", edgecolor="black", zorder=5)
 
         plt.xlabel("Date")
         plt.xticks(rotation=30)
@@ -177,6 +202,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
