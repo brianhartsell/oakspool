@@ -187,13 +187,12 @@ def plot_last_30_days(csv_path: str):
             )
 
         # tighten Y axis
-        if not y_all.empty:
-            y_clean = y_all.dropna()
-            if not y_clean.empty:
-                mn, mx = y_clean.min(), y_clean.max()
-                if pd.notna(mn) and pd.notna(mx) and not (pd.isna(mn - mx) or pd.isna(mx + mn)):
-                    buf = (mx - mn) * 0.1 if mx > mn else 1
-                    ax.set_ylim(mn - buf, mx + buf)
+        y_clean = y_all.dropna()
+        if not y_clean.empty:
+            mn, mx = y_clean.min(), y_clean.max()
+            if not (pd.isna(mn) or pd.isna(mx) or np.isinf(mn) or np.isinf(mx)):
+                buf = (mx - mn) * 0.1 if mx > mn else 1
+                ax.set_ylim(mn - buf, mx + buf)
 
         ax.set_xlabel("Date")
         tick_dates = recent["test_date"].dt.strftime("%m/%d")
@@ -259,5 +258,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
