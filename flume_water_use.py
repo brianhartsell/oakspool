@@ -147,7 +147,7 @@ for entry in chart_data:
 
 # === Write merged log, sorted by date
 merged = {**existing, **new_entries}
-with open(csv_path, "w", newline="") as f:
+with open(CSV_FILENAME, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["date", "ccf"])
     for d in sorted(merged):
@@ -185,4 +185,5 @@ plt.legend(title="Year")
 plt.tight_layout()
 plt.savefig("docs/flume_season_comparison.png")
 plt.close()
+
 
