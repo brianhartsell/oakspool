@@ -180,6 +180,7 @@ def main():
     if already_logged(data["test_date"]):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
+        print(f"Logging {data['test_date']}")
         append_to_csv(data)
         summary = build_test_summary(data)
 
@@ -193,3 +194,4 @@ def main():
     print("📊 Generating 30-day plots…")
     plot_last_30_days(CSV_FILE)
        
+
