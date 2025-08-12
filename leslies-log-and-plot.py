@@ -2,15 +2,17 @@ import os
 import csv
 from datetime import datetime, timedelta
 import requests
+
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from api import LesliesPoolApi
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
-LOG_DIR    = "logs"
-CSV_FILE   = os.path.join(LOG_DIR, "leslies-log.csv")
-DOCS_DIR   = "docs"
+LOG_DIR      = "logs"
+CSV_FILE     = os.path.join(LOG_DIR, "leslies-log.csv")
+DOCS_DIR     = "docs"
 
 USERNAME     = os.getenv("LESLIES_USERNAME")
 PASSWORD     = os.getenv("LESLIES_PASSWORD")
@@ -25,21 +27,29 @@ FIELDNAMES = [
 ]
 
 TARGET_RANGES = {
-    "free_chlorine": (1, 4), "total_chlorine": (1, 4), "ph": (7.2, 7.8),
-    "alkalinity": (80, 120), "calcium": (200, 400), "cyanuric_acid": (30, 50),
-    "iron": (0, 0.3), "copper": (0, 0.3), "phosphates": (0, 100), "salt": (2500, 3500)
+    "free_chlorine": (1, 4),     "total_chlorine": (1, 4),
+    "ph": (7.2, 7.8),            "alkalinity": (80, 120),
+    "calcium": (200, 400),       "cyanuric_acid": (30, 50),
+    "iron": (0, 0.3),            "copper": (0, 0.3),
+    "phosphates": (0, 100),      "salt": (2500, 3500)
 }
 
 CLOSURE_LIMITS = {
-    "total_chlorine": (0.5, 5), "ph": (6.8, 8.2)
+    "total_chlorine": (0.5, 5),
+    "ph": (6.8, 8.2)
 }
 
 LABELS_AND_UNITS = {
-    "ph": ("pH", ""), "free_chlorine": ("Free Chlorine", "ppm"),
-    "total_chlorine": ("Total Chlorine", "ppm"), "alkalinity": ("Alkalinity", "ppm"),
-    "calcium": ("Calcium Hardness", "ppm"), "cyanuric_acid": ("Cyanuric Acid", "ppm"),
-    "iron": ("Iron", "ppm"), "copper": ("Copper", "ppm"),
-    "phosphates": ("Phosphates", "ppb"), "salt": ("Salt", "ppm"),
+    "ph": ("pH", ""),
+    "free_chlorine": ("Free Chlorine", "ppm"),
+    "total_chlorine": ("Total Chlorine", "ppm"),
+    "alkalinity": ("Alkalinity", "ppm"),
+    "calcium": ("Calcium Hardness", "ppm"),
+    "cyanuric_acid": ("Cyanuric Acid", "ppm"),
+    "iron": ("Iron", "ppm"),
+    "copper": ("Copper", "ppm"),
+    "phosphates": ("Phosphates", "ppb"),
+    "salt": ("Salt", "ppm"),
     "in_store": ("In-Store Treatment", "")
 }
 
@@ -48,49 +58,59 @@ os.makedirs(DOCS_DIR, exist_ok=True)
 
 # ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-def format_label(key): 
-    label, unit = LABELS_AND_UNITS.get(key, (key.replace('_', ' ').title(), ''))
+def format_label(key: str) -> str:
+    label, unit = LABELS_AND_UNITS.get(
+        key, (key.replace('_', ' ').title(), '')
+    )
     return f"{label} ({unit})" if unit else label
 
-def format_value(key, val): 
+def format_value(key: str, val) -> str:
     _, unit = LABELS_AND_UNITS.get(key, ('', ''))
     return f"{val} {unit}" if unit else str(val)
 
-def already_logged(test_date): 
-    if not os.path.exists(CSV_FILE): return False
-    with open(CSV_FILE, newline="") as f:
-        return any(row["test_date"] == test_date for row in csv.DictReader(f))
+def get_status_emoji(key: str, val) -> str:
+    try:
+        v = float(val)
+    except (TypeError, ValueError):
+        return "❓"
+    low, high = TARGET_RANGES.get(key, (None, None))
+    c_low, c_high = CLOSURE_LIMITS.get(key, (None, None))
+    if c_low is not None and (v < c_low or v > c_high):
+        return "🚨"
+    if low is not None and low <= v <= high:
+        return "✅"
+    return "❗️"
 
-def append_to_csv(data): 
+def already_logged(test_date: str) -> bool:
+    if not os.path.exists(CSV_FILE):
+        return False
+    with open(CSV_FILE, newline="") as f:
+        return any(
+            row["test_date"] == test_date
+            for row in csv.DictReader(f)
+        )
+
+def append_to_csv(data: dict):
     write_header = not os.path.exists(CSV_FILE)
     with open(CSV_FILE, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if write_header: writer.writeheader()
-        writer.writerow(data)
+        w = csv.DictWriter(f, fieldnames=FIELDNAMES)
+        if write_header:
+            w.writeheader()
+        w.writerow(data)
     print(f"✅ Logged new test for {data['test_date']}")
 
-def build_test_summary(data):
+def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
     lines = []
     for key in keys:
         val = data.get(key)
-        try:
-            val_float = float(val)
-            low, high = TARGET_RANGES.get(key, (None, None))
-            c_low, c_high = CLOSURE_LIMITS.get(key, (None, None))
-            emoji = (
-                "🚨" if c_low is not None and (val_float < c_low or val_float > c_high)
-                else "✅" if low is not None and low <= val_float <= high
-                else "❗️"
-            )
-        except (TypeError, ValueError):
-            emoji = "❓"
+        emoji = get_status_emoji(key, val)
         label = format_label(key)
-        value_str = format_value(key, val)
-        lines.append(f"{emoji} {label}: {value_str}")
+        value = format_value(key, val)
+        lines.append(f"{emoji} {label}: {value}")
     return "\n".join(lines)
 
-def post_slack_message(channel, text):
+def post_slack_message(channel: str, text: str):
     if not SLACK_TOKEN or not channel:
         print("ℹ️ Slack config missing, skipping post.")
         return
@@ -98,80 +118,114 @@ def post_slack_message(channel, text):
         "Authorization": f"Bearer {SLACK_TOKEN}",
         "Content-Type": "application/json"
     }
-    payload = { "channel": channel, "text": text }
-    r = requests.post("https://slack.com/api/chat.postMessage", headers=headers, json=payload)
+    payload = {"channel": channel, "text": text}
+    r = requests.post(
+        "https://slack.com/api/chat.postMessage",
+        headers=headers, json=payload
+    )
     if r.ok and r.json().get("ok"):
         print("📣 Slack update sent.")
     else:
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
-def plot_last_30_days(csv_path):
+def plot_last_30_days(csv_path: str):
     df = pd.read_csv(csv_path, parse_dates=["test_date"])
-    df["test_date"] = pd.to_datetime(df["test_date"], format="%m/%d/%Y", errors="coerce")
+    df["test_date"] = pd.to_datetime(
+        df["test_date"], format="%m/%d/%Y", errors="coerce"
+    )
     df = df.sort_values("test_date")
-    recent = df[df["test_date"] >= datetime.now() - timedelta(days=30)]
+    cutoff = datetime.now() - timedelta(days=30)
+    recent = df[df["test_date"] >= cutoff]
 
     plots = {
-        "chlorine": ["free_chlorine", "total_chlorine"],
-        "ph": ["ph"], "alkalinity": ["alkalinity"], "calcium": ["calcium"],
-        "cyanuric_acid": ["cyanuric_acid"], "iron": ["iron"], "copper": ["copper"],
-        "phosphates": ["phosphates"], "salt": ["salt"], "in_store": ["in_store"]
+        "chlorine":      ["free_chlorine", "total_chlorine"],
+        "ph":            ["ph"],
+        "alkalinity":    ["alkalinity"],
+        "calcium":       ["calcium"],
+        "cyanuric_acid": ["cyanuric_acid"],
+        "iron":          ["iron"],
+        "copper":        ["copper"],
+        "phosphates":    ["phosphates"],
+        "salt":          ["salt"],
+        "in_store":      ["in_store"]
     }
 
     for name, cols in plots.items():
-        plt.figure(figsize=(10, 4))
+        fig, ax = plt.subplots(figsize=(10, 4))
         y_all = pd.Series(dtype="float64")
 
         for col in cols:
-            if col not in recent.columns: continue
+            if col not in recent.columns:
+                continue
             y = pd.to_numeric(recent[col], errors="coerce")
-            y_all = pd.concat([y_all, y])
+            y_all = pd.concat([y_all, y], ignore_index=True)
 
+            # draw recommended band
             if col in TARGET_RANGES:
-                low, high = TARGET_RANGES[col]
-                plt.axhspan(low, high, color="green", alpha=0.1)
+                lo, hi = TARGET_RANGES[col]
+                ax.axhspan(lo, hi, color="green", alpha=0.1)
 
+            # highlight out‐of‐closure and draw caution/closure bands
             if col in CLOSURE_LIMITS:
-                c_low, c_high = CLOSURE_LIMITS[col]
-                mask = (y < c_low) | (y > c_high)
+                c_lo, c_hi = CLOSURE_LIMITS[col]
+                mask = (y < c_lo) | (y > c_hi)
                 if mask.any():
-                    plt.scatter(recent["test_date"][mask], y[mask], color="red", edgecolor="black", zorder=5)
-                    if c_low < low: plt.axhspan(c_low, low, color="yellow", alpha=0.1)
-                    if c_high > high: plt.axhspan(high, c_high, color="yellow", alpha=0.1)
-                    plt.axhspan(0, c_low, color="red", alpha=0.05)
-                    plt.axhspan(c_high, y.max(), color="red", alpha=0.05)
+                    dates = recent.loc[mask, "test_date"]
+                    ax.scatter(dates, y[mask], color="red",
+                               edgecolor="black", zorder=5)
+                    if c_lo < lo:
+                        ax.axhspan(c_lo, lo, color="yellow", alpha=0.1)
+                    if c_hi > hi:
+                        ax.axhspan(hi, c_hi, color="yellow", alpha=0.1)
+                    ax.axhspan(0, c_lo, color="red", alpha=0.05)
+                    ax.axhspan(c_hi, y.max(), color="red", alpha=0.05)
 
-            plt.plot(recent["test_date"], y, marker="o", label=format_label(col))
+            ax.plot(
+                recent["test_date"], y,
+                marker="o", label=format_label(col)
+            )
 
+        # tighten Y axis
         if not y_all.empty:
-            y_min, y_max = y_all.min(), y_all.max()
-            buffer = (y_max - y_min) * 0.1 if y_max > y_min else 1
-            plt.ylim(y_min - buffer, y_max + buffer)
+            mn, mx = y_all.min(), y_all.max()
+            buf = (mx - mn) * 0.1 if mx > mn else 1
+            ax.set_ylim(mn - buf, mx + buf)
 
-        plt.xlabel("Date")
-        plt.xticks(rotation=30)
-        plt.ylabel(format_label(name))
+        ax.set_xlabel("Date")
+        ax.set_xticklabels(
+            recent["test_date"].dt.strftime("%m/%d"),
+            rotation=30
+        )
+        ax.set_ylabel(format_label(name))
 
+        # legend only for pH’s data series
         if name == "ph":
-            handles, labels = plt.gca().get_legend_handles_labels()
-            data_labels = [lbl for lbl in labels if not any(zone in lbl.lower() for zone in ["recommended", "caution", "closure"])]
-            data_handles = [h for h, lbl in zip(handles, labels) if lbl in data_labels]
-            if data_handles:
-                plt.legend(data_handles, data_labels)
+            h, l = ax.get_legend_handles_labels()
+            data_pairs = [
+                (hndl, lbl)
+                for hndl, lbl in zip(h, l)
+                if lbl == format_label("ph")
+            ]
+            if data_pairs:
+                handles, labels = zip(*data_pairs)
+                ax.legend(handles, labels)
 
-        plt.grid(alpha=0.3)
-        plt.tight_layout()
+        ax.grid(alpha=0.3)
+        fig.tight_layout()
+
         out_path = os.path.join(DOCS_DIR, f"{name}.png")
-        plt.savefig(out_path)
-        plt.close()
+        fig.savefig(out_path)
+        plt.close(fig)
         print(f"  • Saved plot: {out_path}")
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 def main():
     api = LesliesPoolApi(
-        username=USERNAME, password=PASSWORD,
-        pool_profile_id=POOLID, pool_name=POOLNAME
+        username=USERNAME,
+        password=PASSWORD,
+        pool_profile_id=POOLID,
+        pool_name=POOLNAME
     )
     if not api.authenticate():
         raise RuntimeError("⚠️ Leslie’s login failed")
@@ -180,19 +234,25 @@ def main():
     if already_logged(data["test_date"]):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
-        print(f"Logging {data['test_date']}")
+        print(f"Logging new test: {data['test_date']}")
         append_to_csv(data)
         summary = build_test_summary(data)
 
-        slack_text = f"New water test logged on {data['test_date']}:\n{summary}"
-        post_slack_message(SLACK_CHANNEL, slack_text)
+        post_slack_message(
+            SLACK_CHANNEL,
+            f"New water test logged on {data['test_date']}:\n{summary}"
+        )
 
         if "🚨" in summary:
-            alert_text = "🚨 One or more readings are outside operating limits.\nFix immediately!"
-            post_slack_message(SLACK_CHANNEL, alert_text)
+            post_slack_message(
+                SLACK_CHANNEL,
+                "🚨 One or more readings are outside operating limits.\nFix immediately!"
+            )
 
     print("📊 Generating 30-day plots…")
     plot_last_30_days(CSV_FILE)
-       
+
+# ─── ENTRY POINT ───────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     main()
