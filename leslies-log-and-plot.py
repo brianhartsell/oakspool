@@ -190,7 +190,7 @@ def plot_last_30_days(csv_path: str):
         y_clean = y_all.dropna()
         if not y_clean.empty:
             mn, mx = y_clean.min(), y_clean.max()
-            if not (pd.isna(mn) or pd.isna(mx) or np.isinf(mn) or np.isinf(mx)):
+            if all(map(lambda v: isinstance(v, (int, float)) and not (v != v or v in (float("inf"), float("-inf"))), [mn, mx])):
                 buf = (mx - mn) * 0.1 if mx > mn else 1
                 ax.set_ylim(mn - buf, mx + buf)
 
@@ -258,6 +258,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
