@@ -194,4 +194,5 @@ def main():
     print("📊 Generating 30-day plots…")
     plot_last_30_days(CSV_FILE)
        
-
+if __name__ == "__main__":
+    main()
