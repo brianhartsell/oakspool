@@ -126,17 +126,9 @@ plt.grid()
 plt.savefig("docs/flume_usage_chart.png")
 plt.close()
 
-# === Safely update CSV log with recent values
-csv_path = CSV_FILENAME
-backup_dir = "flume_log_backup"
-os.makedirs(backup_dir, exist_ok=True)
-timestamp = now.strftime("%Y%m%d_%H%M%S")
-backup_path = os.path.join(backup_dir, f"flume_usage_log.csv.{timestamp}.bak")
-shutil.copyfile(csv_path, backup_path)
-
 # === Read existing log
 existing = {}
-with open(csv_path, newline='') as f:
+with open(CSV_FILENAME, newline='') as f:
     for row in csv.DictReader(f):
         existing[row["date"]] = float(row["ccf"])
 
@@ -193,3 +185,4 @@ plt.legend(title="Year")
 plt.tight_layout()
 plt.savefig("docs/flume_season_comparison.png")
 plt.close()
+
