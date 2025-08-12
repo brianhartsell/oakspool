@@ -162,8 +162,8 @@ def plot_last_30_days(csv_path: str):
                 y_all = pd.concat([y_all, y.dropna()], ignore_index=True)
 
             # draw recommended band
+            lo, hi = TARGET_RANGES.get(col, (None, None))
             if col in TARGET_RANGES:
-                lo, hi = TARGET_RANGES[col]
                 ax.axhspan(lo, hi, color="green", alpha=0.1)
 
             # highlight out‐of‐closure and draw caution/closure bands
@@ -174,12 +174,14 @@ def plot_last_30_days(csv_path: str):
                     dates = recent.loc[mask, "test_date"]
                     ax.scatter(dates, y[mask], color="red",
                                edgecolor="black", zorder=5)
-                    if c_lo < lo:
+                    if lo is not None and c_lo < lo:
                         ax.axhspan(c_lo, lo, color="yellow", alpha=0.1)
-                    if c_hi > hi:
+                    if hi is not None and c_hi > hi:
                         ax.axhspan(hi, c_hi, color="yellow", alpha=0.1)
-                    ax.axhspan(0, c_lo, color="red", alpha=0.05)
-                    ax.axhspan(c_hi, y.max(), color="red", alpha=0.05)
+                    y_max = y.max()
+                    if pd.notna(y_max):
+                        ax.axhspan(0, c_lo, color="red", alpha=0.05)
+                        ax.axhspan(c_hi, y_max, color="red", alpha=0.05)
 
             ax.plot(
                 recent["test_date"], y,
@@ -195,13 +197,11 @@ def plot_last_30_days(csv_path: str):
                 ax.set_ylim(mn - buf, mx + buf)
 
         ax.set_xlabel("Date")
-        tick_dates = recent["test_date"].dt.strftime("%m/%d")
-        ax.set_xticks(recent["test_date"])
-        ax.set_xticklabels(tick_dates, rotation=30)
+        
         ax.set_ylabel(format_label(name))
-
-        # legend only for pH’s data series
-        if name == "ph":
+        fig.autofmt_xdate(rotation=30)
+        # legend only for chlorine data series
+        if name == "chlorine":
             h, l = ax.get_legend_handles_labels()
             data_pairs = [
                 (hndl, lbl)
@@ -258,6 +258,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
