@@ -159,7 +159,7 @@ def plot_last_30_days(csv_path: str):
                 continue
             y = pd.to_numeric(recent[col], errors="coerce")
             if not y.dropna().empty:
-            y_all = pd.concat([y_all, y.dropna()], ignore_index=True)
+                y_all = pd.concat([y_all, y.dropna()], ignore_index=True)
 
             # draw recommended band
             if col in TARGET_RANGES:
@@ -259,4 +259,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
