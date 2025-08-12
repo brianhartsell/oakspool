@@ -158,7 +158,8 @@ def plot_last_30_days(csv_path: str):
             if col not in recent.columns:
                 continue
             y = pd.to_numeric(recent[col], errors="coerce")
-            y_all = pd.concat([y_all, y], ignore_index=True)
+            if not y.dropna().empty:
+            y_all = pd.concat([y_all, y.dropna()], ignore_index=True)
 
             # draw recommended band
             if col in TARGET_RANGES:
@@ -187,15 +188,17 @@ def plot_last_30_days(csv_path: str):
 
         # tighten Y axis
         if not y_all.empty:
-            mn, mx = y_all.min(), y_all.max()
-            buf = (mx - mn) * 0.1 if mx > mn else 1
-            ax.set_ylim(mn - buf, mx + buf)
+            y_clean = y_all.dropna()
+            if not y_clean.empty:
+                mn, mx = y_clean.min(), y_clean.max()
+                if pd.notna(mn) and pd.notna(mx) and not (pd.isna(mn - mx) or pd.isna(mx + mn)):
+                    buf = (mx - mn) * 0.1 if mx > mn else 1
+                    ax.set_ylim(mn - buf, mx + buf)
 
         ax.set_xlabel("Date")
-        ax.set_xticklabels(
-            recent["test_date"].dt.strftime("%m/%d"),
-            rotation=30
-        )
+        tick_dates = recent["test_date"].dt.strftime("%m/%d")
+        ax.set_xticks(recent["test_date"])
+        ax.set_xticklabels(tick_dates, rotation=30)
         ax.set_ylabel(format_label(name))
 
         # legend only for pH’s data series
@@ -256,3 +259,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
