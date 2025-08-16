@@ -236,6 +236,7 @@ def main():
         raise RuntimeError("⚠️ Leslie’s login failed")
 
     data = api.fetch_water_test_data()
+    print(data)
     if already_logged(data["test_date"]):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
@@ -261,6 +262,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
