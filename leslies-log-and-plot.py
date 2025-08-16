@@ -35,7 +35,7 @@ TARGET_RANGES = {
 }
 
 CLOSURE_LIMITS = {
-    "total_chlorine": (0.5, 5),
+    "total_chlorine": (0.5, 5.5),
     "ph": (6.8, 8.2)
 }
 
@@ -261,6 +261,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
