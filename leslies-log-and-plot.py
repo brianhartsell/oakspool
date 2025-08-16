@@ -172,16 +172,17 @@ def plot_last_30_days(csv_path: str):
                 mask = (y < c_lo) | (y > c_hi)
                 if mask.any():
                     dates = recent.loc[mask, "test_date"]
-                    ax.scatter(dates, y[mask], color="red",
-                               edgecolor="black", zorder=5)
-                    if lo is not None and c_lo < lo:
-                        ax.axhspan(c_lo, lo, color="yellow", alpha=0.1)
-                    if hi is not None and c_hi > hi:
-                        ax.axhspan(hi, c_hi, color="yellow", alpha=0.1)
-                    y_max = y.max()
-                    if pd.notna(y_max):
-                        ax.axhspan(0, c_lo, color="red", alpha=0.05)
-                        ax.axhspan(c_hi, y_max, color="red", alpha=0.05)
+                    ax.scatter(dates, y[mask], color="red", edgecolor="black", zorder=5)
+            
+                # Always draw caution and closure bands
+                if lo is not None and c_lo < lo:
+                    ax.axhspan(c_lo, lo, color="yellow", alpha=0.1)
+                if hi is not None and c_hi > hi:
+                    ax.axhspan(hi, c_hi, color="yellow", alpha=0.1)
+                y_max = y.max()
+                if pd.notna(y_max):
+                    ax.axhspan(0, c_lo, color="red", alpha=0.05)
+                    ax.axhspan(c_hi, y_max, color="red", alpha=0.05)
 
             ax.plot(
                 recent["test_date"], y,
@@ -203,14 +204,16 @@ def plot_last_30_days(csv_path: str):
         # legend only for chlorine data series
         if name == "chlorine":
             h, l = ax.get_legend_handles_labels()
+            allowed = {format_label("free_chlorine"), format_label("total_chlorine")}
             data_pairs = [
                 (hndl, lbl)
                 for hndl, lbl in zip(h, l)
-                if lbl == format_label("ph")
+                if lbl in allowed
             ]
             if data_pairs:
                 handles, labels = zip(*data_pairs)
                 ax.legend(handles, labels)
+
 
         ax.grid(alpha=0.3)
         fig.tight_layout()
@@ -258,6 +261,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
