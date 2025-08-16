@@ -130,6 +130,9 @@ def post_slack_message(channel: str, text: str):
 
 def plot_last_30_days(csv_path: str):
     df = pd.read_csv(csv_path, parse_dates=["test_date"])
+    # Replace "N/A" strings with 0
+    df.replace("N/A", 0, inplace=True)
+
     df["test_date"] = pd.to_datetime(
         df["test_date"], format="%m/%d/%Y", errors="coerce"
     )
@@ -236,6 +239,12 @@ def main():
         raise RuntimeError("⚠️ Leslie’s login failed")
 
     data = api.fetch_water_test_data()
+    
+    # Normalize "N/A" to 0
+    for key, val in data.items():
+        if isinstance(val, str) and val.strip().upper() == "N/A":
+            data[key] = 0
+
     print(data)
     if already_logged(data["test_date"]):
         print(f"ℹ️ Already logged {data['test_date']}")
@@ -262,6 +271,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
