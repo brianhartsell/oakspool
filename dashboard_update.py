@@ -140,6 +140,7 @@ html_content = f"""<!DOCTYPE html>
         <img src="chlorine.png" alt="Chlorine Levels">
         <img src="alkalinity.png" alt="Alkalinity">
         <img src="cyanuric_acid.png" alt="CYA Levels">
+        <img src="phosphates.png" alt="Phosphate Levels">
         <img src="calcium.png" alt="Calcium Levels">
         <img src="copper.png" alt="Copper Levels">
         <img src="iron.png" alt="Iron Levels">
@@ -187,6 +188,7 @@ if TODAY.weekday() == 6:
     post_slack_update(SLACK_CHANNEL)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
