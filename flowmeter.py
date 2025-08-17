@@ -14,6 +14,7 @@ async def get_camera_id(ws):
         "command": "listDevices"
     }))
     response = await ws.recv()
+    print(f"Raw response: {response}")
     devices = json.loads(response).get("data", [])
     for device in devices:
         print(f"Found device: {device.get('name')}")
