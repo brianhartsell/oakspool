@@ -13,14 +13,24 @@ async def get_camera_id(ws):
         "messageId": "1",
         "command": "listDevices"
     }))
-    response = await ws.recv()
-    print(f"Raw response: {response}")
-    devices = json.loads(response).get("data", [])
-    for device in devices:
-        print(f"Found device: {device.get('name')}")
-        if device.get("name") == CAMERA_NAME:
-            return device.get("serialNumber")
-    return None
+
+    while True:
+        response = await ws.recv()
+        print(f"Raw response: {response}")
+
+        data = json.loads(response)
+
+        # Skip non-result messages
+        if data.get("type") != "result" or data.get("messageId") != "1":
+            continue
+
+        devices = data.get("data", [])
+        for device in devices:
+            print(f"Found device: {device.get('name')}")
+            if device.get("name") == CAMERA_NAME:
+                return device.get("serialNumber")
+        return None
+
 
 async def start_stream(ws, serial):
     await ws.send(json.dumps({
