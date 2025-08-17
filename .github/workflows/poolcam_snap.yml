@@ -46,7 +46,7 @@ jobs:
         run: python flowmeter.py
 
       - name: Upload frame
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: poolcam-frame
           path: poolcam_frame.jpg
