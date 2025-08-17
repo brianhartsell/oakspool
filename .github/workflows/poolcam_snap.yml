@@ -48,5 +48,5 @@ jobs:
       - name: Upload frame
         uses: actions/upload-artifact@v4
         with:
-          name: poolcam-frame
-          path: poolcam_frame.jpg
+          name: flow_reading
+          path: flow_reading.jpg
