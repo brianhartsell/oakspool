@@ -1,14 +1,18 @@
 import asyncio
 import websockets
 import json
-import subprocess
+from ffmpeg import FFmpeg
 
 WS_URL = "ws://localhost:3000"
 CAMERA_NAME = "Flow"
 FRAME_PATH = "flow_reading.jpg"
+STREAM_PATH = "livestream.mp4"
 
 async def get_camera_id(ws):
-    await ws.send(json.dumps({"messageId": "1", "command": "listDevices"}))
+    await ws.send(json.dumps({
+        "messageId": "1",
+        "command": "listDevices"
+    }))
     response = await ws.recv()
     devices = json.loads(response).get("data", [])
     for device in devices:
@@ -22,7 +26,7 @@ async def start_stream(ws, serial):
         "command": "startLivestream",
         "serialNumber": serial
     }))
-    await asyncio.sleep(10)  # Let stream buffer
+    await asyncio.sleep(10)  # Buffer stream
 
 async def stop_stream(ws, serial):
     await ws.send(json.dumps({
@@ -32,11 +36,12 @@ async def stop_stream(ws, serial):
     }))
 
 def extract_frame():
-    # Assuming stream is saved to a temp file by the bridge
-    subprocess.run([
-        "ffmpeg", "-y", "-i", "livestream.mp4",
-        "-vf", "select=eq(n\\,10)", "-vframes", "1", FRAME_PATH
-    ])
+    ffmpeg = (
+        FFmpeg()
+        .input(STREAM_PATH)
+        .output(FRAME_PATH, vf="select=eq(n\\,10)", vframes=1)
+    )
+    ffmpeg.execute()
 
 async def main():
     async with websockets.connect(WS_URL) as ws:
@@ -49,4 +54,5 @@ async def main():
         extract_frame()
         print(f"Frame saved to {FRAME_PATH}")
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
