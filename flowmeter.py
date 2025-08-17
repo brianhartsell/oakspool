@@ -31,6 +31,22 @@ async def get_camera_id(ws):
                 return device.get("serialNumber")
         return None
 
+async def wait_for_bridge(ws, timeout=60):
+    import time
+    start = time.time()
+    while time.time() - start < timeout:
+        await ws.send(json.dumps({
+            "messageId": "meta",
+            "command": "getCommandList"
+        }))
+        response = await ws.recv()
+        print(f"Bridge check: {response}")
+        data = json.loads(response)
+        if data.get("success"):
+            return True
+        await asyncio.sleep(2)
+    raise TimeoutError("Bridge did not become ready in time.")
+
 
 async def start_stream(ws, serial):
     await ws.send(json.dumps({
@@ -57,6 +73,7 @@ def extract_frame():
 
 async def main():
     async with websockets.connect(WS_URL) as ws:
+        await wait_for_bridge(ws)
         serial = await get_camera_id(ws)
 
         if not serial:
