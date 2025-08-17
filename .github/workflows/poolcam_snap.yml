@@ -21,6 +21,7 @@ jobs:
           docker run -d \
             -e USERNAME=${{ secrets.EUFY_USER }} \
             -e PASSWORD=${{ secrets.EUFY_PASS }} \
+            -e DEVICE_ID=pull-from-github-87432 \
             -e COUNTRY=US \
             -e LANGUAGE=en \
             -p 3000:3000 \
