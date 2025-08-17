@@ -16,17 +16,27 @@ jobs:
         with:
           node-version: '24.5.0'
 
+      - name: Create session volume directory
+        run: mkdir -p ./eufy-session
+
       - name: Start WebSocket bridge (Docker)
         run: |
           docker run -d \
             -e USERNAME=${{ secrets.EUFY_USER }} \
             -e PASSWORD=${{ secrets.EUFY_PASS }} \
-            -e DEVICE_ID=pull-from-github-87432 \
+            -e DEVICE_ID=persistent-ci-bridge-001 \
             -e COUNTRY=US \
             -e LANGUAGE=en \
+            -v ${{ github.workspace }}/eufy-session:/data \
             -p 3000:3000 \
             bropat/eufy-security-ws:latest
-          sleep 20
+          sleep 30  # Allow bridge to initialize
+
+      - name: Submit Safety PIN (if needed)
+        if: ${{ secrets.EUFY_PIN != '' }}
+        run: |
+          docker exec $(docker ps -q --filter ancestor=bropat/eufy-security-ws) \
+            node cli.js verifyCode ${{ secrets.EUFY_PIN }}
 
       - name: Install Python dependencies
         run: pip install websockets python-ffmpeg
