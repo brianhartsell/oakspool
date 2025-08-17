@@ -16,6 +16,7 @@ async def get_camera_id(ws):
     response = await ws.recv()
     devices = json.loads(response).get("data", [])
     for device in devices:
+        print(f"Found device: {device.get('name')}")
         if device.get("name") == CAMERA_NAME:
             return device.get("serialNumber")
     return None
@@ -46,9 +47,6 @@ def extract_frame():
 async def main():
     async with websockets.connect(WS_URL) as ws:
         serial = await get_camera_id(ws)
-        
-        for device in devices:
-            print(f"Found device: {device.get('name')}")
 
         if not serial:
             print("Camera not found.")
