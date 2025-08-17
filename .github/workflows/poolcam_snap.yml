@@ -1,0 +1,52 @@
+name: PoolCam Snapshot
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install eufy-security-ws
+        run: |
+          git clone https://github.com/bropat/eufy-security-ws
+          cd eufy-security-ws
+          npm install
+
+      - name: Configure credentials
+        run: |
+          echo "USERNAME=${{ secrets.EUFY_USER }}" >> eufy-security-ws/.env
+          echo "PASSWORD=${{ secrets.EUFY_PASS }}" >> eufy-security-ws/.env
+          echo "COUNTRY=US" >> eufy-security-ws/.env
+          echo "LANGUAGE=en" >> eufy-security-ws/.env
+
+      - name: Start WebSocket bridge
+        run: |
+          cd eufy-security-ws
+          npm start &
+          sleep 10  # Allow bridge to initialize
+
+      - name: Install Python dependencies
+        run: pip install websockets
+
+      - name: Install FFmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Run snapshot script
+        run: python flowmeter.py
+
+      - name: Upload frame
+        uses: actions/upload-artifact@v3
+        with:
+          name: poolcam-frame
+          path: poolcam_frame.jpg
