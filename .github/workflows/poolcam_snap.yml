@@ -1,21 +1,20 @@
 name: PoolCam Snapshot
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # Every 30 minutes
-  workflow_dispatch:
+  workflow_dispatch:  # ✅ Manual trigger only
 
 jobs:
   snapshot:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24.5.0'
 
       - name: Install eufy-security-ws
         run: |
@@ -34,7 +33,7 @@ jobs:
         run: |
           cd eufy-security-ws
           npm start &
-          sleep 10  # Allow bridge to initialize
+          sleep 10
 
       - name: Install Python dependencies
         run: pip install websockets
@@ -43,7 +42,7 @@ jobs:
         run: sudo apt-get install -y ffmpeg
 
       - name: Run snapshot script
-        run: python flowmeter.py
+        run: python snapshot.py
 
       - name: Upload frame
         uses: actions/upload-artifact@v4
