@@ -4,8 +4,8 @@ import json
 import subprocess
 
 WS_URL = "ws://localhost:3000"
-CAMERA_NAME = "PoolCam"
-FRAME_PATH = "poolcam_frame.jpg"
+CAMERA_NAME = "Flow"
+FRAME_PATH = "flow_reading.jpg"
 
 async def get_camera_id(ws):
     await ws.send(json.dumps({"messageId": "1", "command": "listDevices"}))
