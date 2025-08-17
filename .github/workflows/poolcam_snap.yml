@@ -32,8 +32,9 @@ jobs:
       - name: Start WebSocket bridge
         run: |
           cd eufy-security-ws
-          npm start &
+          npx ts-node src/bin/server.ts &
           sleep 10
+
 
       - name: Install Python dependencies
         run: pip install websockets
@@ -42,7 +43,7 @@ jobs:
         run: sudo apt-get install -y ffmpeg
 
       - name: Run snapshot script
-        run: python snapshot.py
+        run: python flowmeter.py
 
       - name: Upload frame
         uses: actions/upload-artifact@v4
