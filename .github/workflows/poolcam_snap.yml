@@ -16,33 +16,25 @@ jobs:
         with:
           node-version: '24.5.0'
 
-      - name: Install eufy-security-ws
+      - name: Start WebSocket bridge (Docker)
         run: |
-          git clone https://github.com/bropat/eufy-security-ws
-          cd eufy-security-ws
-          npm install
-
-      - name: Configure credentials
-        run: |
-          echo "USERNAME=${{ secrets.EUFY_USER }}" >> eufy-security-ws/.env
-          echo "PASSWORD=${{ secrets.EUFY_PASS }}" >> eufy-security-ws/.env
-          echo "COUNTRY=US" >> eufy-security-ws/.env
-          echo "LANGUAGE=en" >> eufy-security-ws/.env
-
-      - name: Start WebSocket bridge
-        run: |
-          cd eufy-security-ws
-          npx ts-node src/bin/server.ts &
+          docker run -d \
+            -e USERNAME=${{ secrets.EUFY_USER }} \
+            -e PASSWORD=${{ secrets.EUFY_PASS }} \
+            -e COUNTRY=US \
+            -e LANGUAGE=en \
+            -p 3000:3000 \
+            bropat/eufy-security-ws
           sleep 10
 
       - name: Install Python dependencies
         run: pip install websockets python-ffmpeg
 
-      - name: Run snapshot script
+      - name: Run flowmeter script
         run: python flowmeter.py
 
       - name: Upload frame
         uses: actions/upload-artifact@v4
         with:
-          name: flow_reading
+          name: poolcam-frame
           path: flow_reading.jpg
