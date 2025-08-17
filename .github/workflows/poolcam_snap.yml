@@ -27,12 +27,15 @@ jobs:
             -p 3000:3000 \
             bropat/eufy-security-ws:latest
           sleep 30  # Allow bridge to initialize
-
+        
       - name: Submit Safety PIN (if needed)
-        if: ${{ secrets.EUFY_PIN != '' }}
+        if: env.EUFY_PIN != ''
+        env:
+          EUFY_PIN: ${{ secrets.EUFY_PIN }}
         run: |
           docker exec $(docker ps -q --filter ancestor=bropat/eufy-security-ws) \
-            node cli.js verifyCode ${{ secrets.EUFY_PIN }}
+            node cli.js verifyCode $EUFY_PIN
+
 
       - name: Install Python dependencies
         run: pip install websockets python-ffmpeg
