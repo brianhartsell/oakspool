@@ -16,8 +16,8 @@ jobs:
         with:
           node-version: '24.5.0'
 
-      - name: Create session volume directory
-        run: mkdir -p ./eufy-session
+      #- name: Create session volume directory
+      #  run: mkdir -p ./eufy-session
 
       - name: Start WebSocket bridge (Docker)
         run: |
@@ -27,7 +27,7 @@ jobs:
             -e DEVICE_ID=persistent-ci-bridge-001 \
             -e COUNTRY=US \
             -e LANGUAGE=en \
-            -v ${{ github.workspace }}/eufy-session:/data \
+            # -v ${{ github.workspace }}/eufy-session:/data \
             -p 3000:3000 \
             bropat/eufy-security-ws:latest
           sleep 30  # Allow bridge to initialize
