@@ -1,43 +1,50 @@
 name: PoolCam Snapshot
 
 on:
-  workflow_dispatch:  # ✅ Manual trigger only
+  workflow_dispatch:
 
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Restore Eufy session cache
+        uses: actions/cache@v3
         with:
-          node-version: '24.5.0'
+          path: eufy-session
+          key: ${{ runner.os }}-eufy-session-${{ secrets.EUFY_DEVICE_ID }}
+          restore-keys: |
+            ${{ runner.os }}-eufy-session-
 
       - name: Start WebSocket bridge (Docker)
         run: |
           docker run -d \
             -e USERNAME=${{ secrets.EUFY_USER }} \
             -e PASSWORD=${{ secrets.EUFY_PASS }} \
-            -e DEVICE_ID=persistent-ci-bridge-001 \
+            -e DEVICE_ID=${{ secrets.EUFY_DEVICE_ID }} \
             -e COUNTRY=US \
             -e LANGUAGE=en \
+            -v ${{ github.workspace }}/eufy-session:/data \
             -p 3000:3000 \
             bropat/eufy-security-ws:latest
-          sleep 30  # Allow bridge to initialize
-        
-      - name: Submit Safety PIN (if needed)
-        if: env.EUFY_PIN != ''
+          sleep 30
+
+      - name: Submit PIN (only on first run)
+        if: steps.cache.outputs.cache-hit != 'true'
         env:
           EUFY_PIN: ${{ secrets.EUFY_PIN }}
         run: |
           docker exec $(docker ps -q --filter ancestor=bropat/eufy-security-ws) \
             node cli.js verifyCode $EUFY_PIN
 
+      - name: Save Eufy session cache
+        uses: actions/cache@v3
+        with:
+          path: eufy-session
+          key: ${{ runner.os }}-eufy-session-${{ secrets.EUFY_DEVICE_ID }}
 
-      - name: Install Python dependencies
+      - name: Install Python deps
         run: pip install websockets python-ffmpeg
 
       - name: Run flowmeter script
@@ -48,9 +55,3 @@ jobs:
         with:
           name: poolcam-frame
           path: flow_reading.jpg
-
-# Optional volume mount for session persistence:
-# -v ${{ github.workspace }}/eufy-session:/data \
-
-#- name: Create session volume directory
-#  run: mkdir -p ./eufy-session
