@@ -28,13 +28,15 @@ jobs:
             bropat/eufy-security-ws:latest
           sleep 30
 
-      - name: Submit Safety PIN (if needed)
-        if: ${{ secrets.EUFY_PIN != '' }}
+      - name: Set PIN_REQUIRED flag
+        run: echo "PIN_REQUIRED=${{ steps.session-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_ENV
+
+      - name: Verify Safety PIN
+        if: env.PIN_REQUIRED == 'true'
         run: |
           curl -X POST http://localhost:3000/login/verifyCode \
             -H 'Content-Type: application/json' \
             -d "{\"code\":\"${{ secrets.EUFY_PIN }}\"}"
-          # give the bridge a sec to finish auth
           sleep 5
 
       - name: Install Python dependencies
