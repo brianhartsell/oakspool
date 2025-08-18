@@ -9,17 +9,20 @@ jobs:
 
     steps:
 
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Ensure session folder exists
+        run: |
+          mkdir -p session
+          chmod 777 session
+
       - name: Restore Eufy session cache
         uses: actions/cache@v4
         id: session-cache
         with:
           path: session
           key: eufy-session-${{ runner.os }}-v1
-          restore-keys: |
-            eufy-session-${{ runner.os }}-v1
-
-      - name: Checkout repo
-        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,8 +30,9 @@ jobs:
           node-version: '24.x'
 
       - name: Start Eufy bridge (Docker)
+        id: start-bridge
         run: |
-          docker run -d \
+          CONTAINER_ID=$(docker run -d \
             -e USERNAME=${{ secrets.EUFY_USER }} \
             -e PASSWORD=${{ secrets.EUFY_PASS }} \
             -e DEVICE_ID=poolcam-ci-ephemeral \
@@ -37,22 +41,35 @@ jobs:
             -e XDG_CONFIG_HOME=/usr/src/app/session \
             -v ${{ github.workspace }}/session:/usr/src/app/session \
             -p 3000:3000 \
-            bropat/eufy-security-ws:latest
+            bropat/eufy-security-ws:latest)
+          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+          echo "Started bridge as $CONTAINER_ID"
+
+      - name: Inspect container status
+        run: docker inspect $CONTAINER_ID
 
       - name: Set PIN_REQUIRED flag
         run: echo "PIN_REQUIRED=${{ steps.session-cache.outputs.cache-hit != 'true' }}" >> $GITHUB_ENV
 
-      - name: Wait for bridge to be ready
+      - name: Wait + Probe for bridge readiness
         run: |
           for i in {1..30}; do
-            if curl -s http://localhost:3000/info | grep -q '"isConnected":true'; then
-              echo "Bridge is ready"
+            RESPONSE=$(curl --silent --show-error \
+              --connect-timeout 1 \
+              --max-time 2 \
+              http://localhost:3000/info || true)
+
+            if echo "$RESPONSE" | grep -q '"isConnected":true'; then
+              echo "✅ Bridge is ready after $i attempts"
               break
             fi
-            echo "Waiting for bridge... ($i)"
+
+            echo "⏳ Waiting for bridge... ($i)"
             sleep 2
-            if [ $i -eq 30 ]; then
-              echo "Bridge never connected. Exiting."
+
+            if [ "$i" -eq 30 ]; then
+              echo "❌ Bridge never connected—dumping container logs:"
+              docker logs $CONTAINER_ID || true
               exit 1
             fi
           done
@@ -61,7 +78,7 @@ jobs:
         if: env.PIN_REQUIRED == 'true'
         run: |
           curl -X POST http://localhost:3000/login/verifyCode \
-            -H 'Content-Type: application/json' \
+            -H "Content-Type: application/json" \
             -d "{\"code\":\"${{ secrets.EUFY_PIN }}\"}"
 
       - name: Install Python deps
