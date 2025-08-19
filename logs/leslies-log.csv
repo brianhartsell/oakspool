@@ -17,3 +17,4 @@ test_date,free_chlorine,total_chlorine,ph,alkalinity,calcium,cyanuric_acid,iron,
 08/16/2025,3.95,4.06,7.7,84,175,47,0.2,0,334,0,False
 
 08/17/2025,1.97,2.33,7.8,81,159,42,0.2,0.4,0,0,False
+08/18/2025,4.21,4.21,7.5,78,157,50,0.2,0.2,0,0,False
