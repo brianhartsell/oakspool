@@ -94,14 +94,30 @@ def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
     keys_to_compare = [k for k in FIELDNAMES if k != ""]
     return all(str(new_data.get(k)) == str(last_data.get(k)) for k in keys_to_compare)
 
-def append_to_csv(data: dict):
-    write_header = not os.path.exists(CSV_FILE)
-    with open(CSV_FILE, "a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if write_header:
-            w.writeheader()
-        w.writerow(data)
+def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
+    """
+    Append a single test record using pandas, with a consistent
+    'YYYY-MM-DD HH:MM:SS' format for run_timestamp.
+    """
+
+    # Convert the single-row dict into a DataFrame
+    row_df = pd.DataFrame([data])
+
+    # Determine if we need to write the header
+    write_header = not os.path.exists(csv_file)
+
+    # Append to CSV, formatting any datetime columns uniformly
+    row_df.to_csv(
+        csv_file,
+        sep=sep,
+        mode="a",
+        header=write_header,
+        index=False,
+        date_format="%Y-%m-%d %H:%M:%S"
+    )
+
     print(f"✅ Logged new test for {data['test_date']} at {data['run_timestamp']}")
+
 
 def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
@@ -300,6 +316,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
