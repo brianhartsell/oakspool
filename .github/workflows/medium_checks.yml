@@ -54,7 +54,8 @@ jobs:
           git add docs/iron.png
           git add docs/ph.png
           git add docs/phosphates.png
-          
+
+          git status
           git commit -m "Leslie's update on $(date '+%Y-%m-%d %H:%M %Z')"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
