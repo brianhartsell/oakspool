@@ -136,7 +136,8 @@ def plot_last_30_days(csv_path: str):
     df.replace("N/A", 0, inplace=True)
 
     df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
-    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+    if df["run_timestamp"].dt.tz is not None:
+        df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
 
     print("Latest timestamp:", df["run_timestamp"].dropna().max())
     print("Cutoff:", datetime.now() - timedelta(days=30))
@@ -283,6 +284,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
