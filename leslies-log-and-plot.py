@@ -133,11 +133,18 @@ def post_slack_message(channel: str, text: str):
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
 def plot_last_30_days(csv_path: str):
-    df = pd.read_csv(
-        csv_path,
-        parse_dates=["run_timestamp", "test_date"],
-        date_parser=lambda col: pd.to_datetime(col, utc=True, errors="coerce")
-    )
+    df = pd.read_csv(csv_path)
+    
+    # Explicitly parse run_timestamp with offset handling
+    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], utc=True, errors="coerce")
+    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+    
+    # Parse test_date separately
+    df["test_date"] = pd.to_datetime(df["test_date"], errors="coerce")
+    
+    # Drop malformed rows
+    df = df.dropna(subset=["run_timestamp"])
+    
     df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
     df = df.dropna(subset=["run_timestamp"])
     # Replace "N/A" strings with 0
@@ -302,6 +309,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
