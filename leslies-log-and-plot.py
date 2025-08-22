@@ -132,27 +132,24 @@ def post_slack_message(channel: str, text: str):
     else:
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
-def plot_last_30_days(csv_path: str):
-    df = pd.read_csv(csv_path, dtype=str)
-    df.replace("N/A", 0, inplace=True)
-
-    # Parse the known-naive Central format
-    df["run_timest"] = pd.to_datetime(
-        df["run_timestamp"],
-        format="%Y-%m-%d %H:%M:%S",
-        errors="coerce"
+def plot_last_30_days(csv_file):
+    # Let pandas infer and convert run_timestamp into datetime64
+    df = pd.read_csv(
+        csv_file,
+        parse_dates=["run_timestamp"],
+        infer_datetime_format=True,
+        dayfirst=False,      # adjust if you ever switch day/month order
+        on_bad_lines="skip"  # optional: skip rows that totally blow up
     )
 
-    # Clean out any stragglers
+    # Drop any rows that still failed to parse
     df = df.dropna(subset=["run_timestamp"])
-
+    
     # Diagnostics
     print("Parsed timestamps (tail):", df["run_timestamp"].tail().tolist())
     latest = df["run_timestamp"].max()
-    print("Latest timestamp:", latest)
-
-    cutoff = datetime.now() - timedelta(days=30)
-    print("Cutoff:", cutoff)
+    cutoff = latest - pd.Timedelta(days=30)
+    print("Latest:", latest, "Cutoff:", cutoff)
 
     recent = df[df["run_timestamp"] >= cutoff]
     print("Rows in last 30 days:", len(recent))
@@ -303,6 +300,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
