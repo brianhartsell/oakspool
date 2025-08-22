@@ -1,4 +1,4 @@
-name: Flume Constant Water Check
+name: Short Timeline Checks (Flume Constant Water, Leslies)
 
 on:
   schedule:
