@@ -127,7 +127,7 @@ def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
         mode="a",
         header=write_header,
         index=False,
-        date_format="%Y-%m-%d %H:%M:%S"
+        date_format="%Y-%m-%d %H:%M:%S",
         line_terminator="\n"
     )
 
@@ -331,6 +331,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
