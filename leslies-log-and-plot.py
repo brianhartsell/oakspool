@@ -26,7 +26,7 @@ SLACK_TOKEN  = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL= os.getenv("SLACK_CHANNEL")
 
 FIELDNAMES = [
-    "run_timestamp", "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
+    "amp", "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
     "calcium", "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store"
 ]
 
@@ -91,7 +91,7 @@ def load_last_logged_test() -> dict:
         return rows[-1] if rows else {}
 
 def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
-    keys_to_compare = [k for k in FIELDNAMES if k != "run_timestamp"]
+    keys_to_compare = [k for k in FIELDNAMES if k != "amp"]
     return all(str(new_data.get(k)) == str(last_data.get(k)) for k in keys_to_compare)
 
 def append_to_csv(data: dict):
@@ -101,7 +101,7 @@ def append_to_csv(data: dict):
         if write_header:
             w.writeheader()
         w.writerow(data)
-    print(f"✅ Logged new test for {data['test_date']} at {data['run_timestamp']}")
+    print(f"✅ Logged new test for {data['test_date']} at {data['amp']}")
 
 def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
@@ -133,35 +133,29 @@ def post_slack_message(channel: str, text: str):
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
 def plot_last_30_days(csv_path: str):
-    df = pd.read_csv(csv_path)
-    
-    # Explicitly parse run_timestamp with offset handling
-    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], utc=True, errors="coerce")
-    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
-    
-    # Parse test_date separately
-    df["test_date"] = pd.to_datetime(df["test_date"], errors="coerce")
-    
-    # Drop malformed rows
-    df = df.dropna(subset=["run_timestamp"])
-    
-    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
-    df = df.dropna(subset=["run_timestamp"])
-    # Replace "N/A" strings with 0
+    df = pd.read_csv(csv_path, dtype=str)
     df.replace("N/A", 0, inplace=True)
 
-    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], utc=True, errors="coerce")
-    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+    # Parse the known-naive Central format
+    df["run_timestamp"] = pd.to_datetime(
+        df["run_timestamp"],
+        format="%Y-%m-%d %H:%M:%S",
+        errors="coerce"
+    )
 
-    print("Latest timestamp:", df["run_timestamp"].dropna().max())
-    print("Cutoff:", datetime.now() - timedelta(days=30))
-    print("Parsed timestamps:")
-    print(df["run_timestamp"].tail())
-    print("Latest timestamp:", df["run_timestamp"].max())
-    
-    df = df.sort_values("test_date")
+    # Clean out any stragglers
+    df = df.dropna(subset=["run_timestamp"])
+
+    # Diagnostics
+    print("Parsed timestamps (tail):", df["run_timestamp"].tail().tolist())
+    latest = df["run_timestamp"].max()
+    print("Latest timestamp:", latest)
+
     cutoff = datetime.now() - timedelta(days=30)
+    print("Cutoff:", cutoff)
+
     recent = df[df["run_timestamp"] >= cutoff]
+    print("Rows in last 30 days:", len(recent))
 
     plots = {
         "chlorine":      ["free_chlorine", "total_chlorine"],
@@ -275,7 +269,7 @@ def main():
 
     central_time = datetime.now(ZoneInfo("America/Chicago"))
     human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
-    run_timestamp = central_time.isoformat()
+    run_timestamp = central_time.strftime("%Y-%m-%d %H:%M:%S")  
     data["run_timestamp"] = run_timestamp
 
     last_logged = load_last_logged_test()
@@ -309,6 +303,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
