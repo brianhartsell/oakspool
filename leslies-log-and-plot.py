@@ -26,7 +26,7 @@ SLACK_TOKEN  = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL= os.getenv("SLACK_CHANNEL")
 
 FIELDNAMES = [
-    "amp", "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
+    "run_timestamp", "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
     "calcium", "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store"
 ]
 
@@ -91,7 +91,7 @@ def load_last_logged_test() -> dict:
         return rows[-1] if rows else {}
 
 def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
-    keys_to_compare = [k for k in FIELDNAMES if k != "amp"]
+    keys_to_compare = [k for k in FIELDNAMES if k != ""]
     return all(str(new_data.get(k)) == str(last_data.get(k)) for k in keys_to_compare)
 
 def append_to_csv(data: dict):
@@ -101,7 +101,7 @@ def append_to_csv(data: dict):
         if write_header:
             w.writeheader()
         w.writerow(data)
-    print(f"✅ Logged new test for {data['test_date']} at {data['amp']}")
+    print(f"✅ Logged new test for {data['test_date']} at {data['']}")
 
 def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
@@ -137,7 +137,7 @@ def plot_last_30_days(csv_path: str):
     df.replace("N/A", 0, inplace=True)
 
     # Parse the known-naive Central format
-    df["run_timestamp"] = pd.to_datetime(
+    df["run_timest"] = pd.to_datetime(
         df["run_timestamp"],
         format="%Y-%m-%d %H:%M:%S",
         errors="coerce"
@@ -303,6 +303,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
