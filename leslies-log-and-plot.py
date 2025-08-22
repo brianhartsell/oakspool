@@ -2,6 +2,8 @@ import os
 import csv
 from datetime import datetime, timedelta
 import requests
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -245,9 +247,10 @@ def main():
         if isinstance(val, str) and val.strip().upper() == "N/A":
             data[key] = 0
 
-    run_timestamp = datetime.now().isoformat()
     data["run_timestamp"] = run_timestamp
-    human_time = datetime.now().strftime("%B %d, %Y at %-I:%M %p")
+    central_time = datetime.now(ZoneInfo("America/Chicago"))
+    human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
+    run_timestamp = central_time.isoformat()
 
     last_logged = load_last_logged_test()
 
@@ -277,6 +280,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
