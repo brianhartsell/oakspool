@@ -135,9 +135,9 @@ def plot_last_30_days(csv_path: str):
     # Replace "N/A" strings with 0
     df.replace("N/A", 0, inplace=True)
 
-    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
+    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce").dt.tz_localize(None)
     df = df.sort_values("test_date")
-    cutoff = datetime.now(ZoneInfo("America/Chicago")) - timedelta(days=30)
+    cutoff = datetime.now() - timedelta(days=30)
     recent = df[df["run_timestamp"] >= cutoff]
 
     plots = {
@@ -278,6 +278,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
