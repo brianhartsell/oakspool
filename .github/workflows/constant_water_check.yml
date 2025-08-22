@@ -32,7 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests python-dotenv tzlocal pandas
+          pip install requests python-dotenv tzlocal pandas matplotlib
 
       - name: Run Flume constant water check
         run: python flume_constant_water_check.py
