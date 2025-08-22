@@ -249,6 +249,8 @@ def main():
     data["run_timestamp"] = run_timestamp
     human_time = datetime.now().strftime("%B %d, %Y at %-I:%M %p")
 
+    last_logged = load_last_logged_test()
+
     print(data)
     if is_duplicate_test(data, last_logged):
         print(f"ℹ️ Already logged {data['test_date']}")
@@ -275,6 +277,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
