@@ -135,7 +135,8 @@ def plot_last_30_days(csv_path: str):
     # Replace "N/A" strings with 0
     df.replace("N/A", 0, inplace=True)
 
-    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce").dt.tz_localize(None)
+    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
+    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
     df = df.sort_values("test_date")
     cutoff = datetime.now() - timedelta(days=30)
     recent = df[df["run_timestamp"] >= cutoff]
@@ -247,6 +248,8 @@ def main():
 
     central_time = datetime.now(ZoneInfo("America/Chicago"))
     human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
+    print("Latest timestamp:", df["run_timestamp"].dropna().max())
+    print("Cutoff:", datetime.now() - timedelta(days=30))
     run_timestamp = central_time.isoformat()
     data["run_timestamp"] = run_timestamp
 
@@ -271,13 +274,14 @@ def main():
                 "🚨 One or more readings are outside operating limits.\nFix immediately!"
             )
 
-    print("📊 Generating 30-day plots…")
-    plot_last_30_days(CSV_FILE)
+        print("📊 Generating 30-day plots…")
+        plot_last_30_days(CSV_FILE)
 
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     main()
+
 
 
 
