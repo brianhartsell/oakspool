@@ -167,7 +167,7 @@ def post_slack_update(post_channel):
         return
 
     text = (
-        f"💧 Dashboard updated for {TODAY.strftime('%B %d')} from Github.\n"
+        f"Dashboard was updated and is updated nightly at the link below.\n"
         f"🌐 https://brianhartsell.github.io/oakspool/\n\n"
     )
 
@@ -192,6 +192,7 @@ if TODAY.weekday() == 6:
         post_slack_update(channel)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
