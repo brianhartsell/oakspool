@@ -101,7 +101,7 @@ def append_to_csv(data: dict):
         if write_header:
             w.writeheader()
         w.writerow(data)
-    print(f"✅ Logged new test for {data['test_date']} at {data['']}")
+    print(f"✅ Logged new test for {data['test_date']} at {data['run_timestamp']}")
 
 def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
@@ -303,6 +303,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
