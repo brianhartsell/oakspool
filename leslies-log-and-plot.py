@@ -135,12 +135,14 @@ def plot_last_30_days(csv_path: str):
     # Replace "N/A" strings with 0
     df.replace("N/A", 0, inplace=True)
 
-    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
-    if df["run_timestamp"].dt.tz is not None:
-        df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+    df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], utc=True, errors="coerce")
+    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
 
     print("Latest timestamp:", df["run_timestamp"].dropna().max())
     print("Cutoff:", datetime.now() - timedelta(days=30))
+    print("Parsed timestamps:")
+    print(df["run_timestamp"].tail())
+    print("Latest timestamp:", df["run_timestamp"].max())
     
     df = df.sort_values("test_date")
     cutoff = datetime.now() - timedelta(days=30)
@@ -158,6 +160,11 @@ def plot_last_30_days(csv_path: str):
         "salt":          ["salt"],
         "in_store":      ["in_store"]
     }
+
+    latest = df["run_timestamp"].max()
+    if latest < cutoff:
+        print("⚠️ No recent data found. Skipping plot.")
+        return
 
     for name, cols in plots.items():
         fig, ax = plt.subplots(figsize=(10, 4))
@@ -284,6 +291,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
