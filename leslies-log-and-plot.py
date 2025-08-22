@@ -247,9 +247,10 @@ def main():
 
     run_timestamp = datetime.now().isoformat()
     data["run_timestamp"] = run_timestamp
+    human_time = datetime.now().strftime("%B %d, %Y at %-I:%M %p")
 
     print(data)
-    if already_logged(data["test_date"]):
+    if is_duplicate_test(data, last_logged):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
         print(f"Logging new test: {data['test_date']}")
@@ -258,7 +259,7 @@ def main():
 
         post_slack_message(
             SLACK_CHANNEL,
-            f"New water test logged on {data['test_date']}:\n{summary}"
+            f"New water test logged on {human_time}:\n{summary}"
         )
 
         if "🚨" in summary:
@@ -274,6 +275,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
