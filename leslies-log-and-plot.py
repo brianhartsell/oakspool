@@ -22,7 +22,7 @@ SLACK_TOKEN  = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL= os.getenv("SLACK_CHANNEL")
 
 FIELDNAMES = [
-    "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
+    "run_timestamp", "test_date", "free_chlorine", "total_chlorine", "ph", "alkalinity",
     "calcium", "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store"
 ]
 
@@ -59,9 +59,7 @@ os.makedirs(DOCS_DIR, exist_ok=True)
 # ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 def format_label(key: str) -> str:
-    label, unit = LABELS_AND_UNITS.get(
-        key, (key.replace('_', ' ').title(), '')
-    )
+    label, unit = LABELS_AND_UNITS.get(key, (key.replace('_', ' ').title(), ''))
     return f"{label} ({unit})" if unit else label
 
 def format_value(key: str, val) -> str:
@@ -81,14 +79,16 @@ def get_status_emoji(key: str, val) -> str:
         return "✅"
     return "❗️"
 
-def already_logged(test_date: str) -> bool:
+def load_last_logged_test() -> dict:
     if not os.path.exists(CSV_FILE):
-        return False
+        return {}
     with open(CSV_FILE, newline="") as f:
-        return any(
-            row["test_date"] == test_date
-            for row in csv.DictReader(f)
-        )
+        rows = list(csv.DictReader(f))
+        return rows[-1] if rows else {}
+
+def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
+    keys_to_compare = [k for k in FIELDNAMES if k != "run_timestamp"]
+    return all(str(new_data.get(k)) == str(last_data.get(k)) for k in keys_to_compare)
 
 def append_to_csv(data: dict):
     write_header = not os.path.exists(CSV_FILE)
@@ -97,7 +97,7 @@ def append_to_csv(data: dict):
         if write_header:
             w.writeheader()
         w.writerow(data)
-    print(f"✅ Logged new test for {data['test_date']}")
+    print(f"✅ Logged new test for {data['test_date']} at {data['run_timestamp']}")
 
 def build_test_summary(data: dict) -> str:
     keys = ["ph", "total_chlorine", "free_chlorine", "alkalinity", "cyanuric_acid"]
@@ -245,6 +245,9 @@ def main():
         if isinstance(val, str) and val.strip().upper() == "N/A":
             data[key] = 0
 
+    run_timestamp = datetime.now().isoformat()
+    data["run_timestamp"] = run_timestamp
+
     print(data)
     if already_logged(data["test_date"]):
         print(f"ℹ️ Already logged {data['test_date']}")
@@ -271,6 +274,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
