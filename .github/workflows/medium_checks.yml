@@ -56,14 +56,14 @@ jobs:
           git add docs/phosphates.png
 
           git status
-          git commit -m "Leslie's update on $(date '+%Y-%m-%d %H:%M %Z')"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Leslie's update on $(date '+%Y-%m-%d %H:%M %Z')"
+            git fetch origin main
+            git pull --rebase origin main
+            git push
+          fi          
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Push safely with smart rebase
-        run: |
-          git fetch origin main
-          git diff --quiet HEAD origin/main || git pull --rebase origin main
-          git push
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
