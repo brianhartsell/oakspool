@@ -128,7 +128,7 @@ def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
         header=write_header,
         index=False,
         date_format="%Y-%m-%d %H:%M:%S",
-        line_terminator="\n"
+        lineterminator="\n"
     )
 
     print(f"✅ Logged new test for {data['test_date']} at {data['run_timestamp']}")
@@ -331,6 +331,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
