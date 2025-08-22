@@ -16,7 +16,10 @@ TOKEN = os.getenv("GH_TOKEN")
 BRANCH = os.getenv("GH_BRANCH", "main")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
+SLACK_BOARD_CHANNEL = os.getenv("SLACK_BOARD_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+
+broadcast=[SLACK_CHANNEL, SLACK_BOARD_CHANNEL]
 
 # === File paths (all local)
 CSV_LOG = "logs/flume_usage_log.csv"
@@ -159,7 +162,7 @@ with open(OUTPUT_HTML, "w") as f:
 
 # === Slack notification
 def post_slack_update(post_channel):
-    if not SLACK_TOKEN or not SLACK_CHANNEL:
+    if not SLACK_TOKEN:
         print("ℹ️ Slack config missing, skipping post.")
         return
 
@@ -185,9 +188,11 @@ def post_slack_update(post_channel):
 
 # === Fire off Slack ping on Sunday only:
 if TODAY.weekday() == 6:
-    post_slack_update(SLACK_CHANNEL)
+    for channel in broadcast:
+        post_slack_update(channel)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
