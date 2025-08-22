@@ -162,14 +162,22 @@ def post_slack_message(channel: str, text: str):
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
 def plot_last_30_days(csv_file):
+    # Clean blank lines
+    with open(csv_file, "r") as f:
+        lines = [line for line in f if line.strip()]
+
+    with open(csv_file, "w") as f:
+        f.writelines(lines)
+    
     # Let pandas infer and convert run_timestamp into datetime64
-    df = pd.read_csv(
-        csv_file,
-        parse_dates=["run_timestamp"],
-        infer_datetime_format=True,
-        dayfirst=False,      # adjust if you ever switch day/month order
-        on_bad_lines="skip"  # optional: skip rows that totally blow up
-    )
+    with open(csv_file, "a", newline="") as f:
+        df_new.to_csv(
+            f,
+            sep=sep,
+            header=write_header,
+            index=False,
+            date_format="%Y-%m-%d %H:%M:%S"
+        )
 
     # Drop any rows that still failed to parse
     df = df.dropna(subset=["run_timestamp"])
@@ -329,6 +337,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
