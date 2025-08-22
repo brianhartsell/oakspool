@@ -1,0 +1,68 @@
+name: Medium Timeline Checks (Flume Constant Water)
+
+on:
+  schedule:
+    - cron: '* */2 * * *'  # Every 2 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  telemetry:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: brianhartsell/oakspool
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+      SLACK_BOARD_CHANNEL: ${{ secrets.SLACK_BOARD_CHANNEL }}
+      SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
+      LESLIES_USERNAME: ${{ secrets.LESLIES_USERNAME }}
+      LESLIES_PASSWORD: ${{ secrets.LESLIES_PASSWORD }}
+      LESLIES_POOLID: ${{ secrets.LESLIES_POOLID }}
+      LESLIES_POOLNAME: ${{ secrets.LESLIES_POOLNAME }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies and set TZ
+        run: |
+          pip install beautifulsoup4 matplotlib pandas requests python-dotenv pytz
+          export TZ="America/Chicago"
+
+      - name: Run Leslies Summary
+        run: python leslies-log-and-plot.py       
+
+      - name: Commit telemetry and dashboard updates
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git add logs/leslies-log.csv
+          git add docs/alkalinity.png
+          git add docs/calcium.png
+          git add docs/chlorine.png
+          git add docs/copper.png
+          git add docs/cyanuric_acid.png
+          git add docs/iron.png
+          git add docs/ph.png
+          git add docs/phosphates.png
+          
+          git commit -m "Leslie's update on $(date '+%Y-%m-%d %H:%M %Z')"
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Push safely with smart rebase
+        run: |
+          git fetch origin main
+          git diff --quiet HEAD origin/main || git pull --rebase origin main
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
