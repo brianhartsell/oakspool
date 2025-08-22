@@ -275,7 +275,7 @@ def main():
 
         post_slack_message(
             SLACK_CHANNEL,
-            f"New water test logged on {human_time}:\n{summary}"
+            f"New water test logged during run at {human_time}:\n{summary}"
         )
 
         if "🚨" in summary:
@@ -291,6 +291,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
