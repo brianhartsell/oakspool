@@ -131,7 +131,13 @@ def post_slack_message(channel: str, text: str):
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
 def plot_last_30_days(csv_path: str):
-    df = pd.read_csv(csv_path, parse_dates=["test_date"])
+    df = pd.read_csv(
+        csv_path,
+        parse_dates=["run_timestamp", "test_date"],
+        date_parser=lambda col: pd.to_datetime(col, utc=True, errors="coerce")
+    )
+    df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+    df = df.dropna(subset=["run_timestamp"])
     # Replace "N/A" strings with 0
     df.replace("N/A", 0, inplace=True)
 
@@ -291,6 +297,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
