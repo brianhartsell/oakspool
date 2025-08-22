@@ -96,18 +96,32 @@ def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
 
 def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
     """
-    Append a single test record using pandas, with a consistent
-    'YYYY-MM-DD HH:MM:SS' format for run_timestamp.
+    Append one test record using pandas, guaranteed to match FIELDNAMES order
+    and format run_timestamp as 'YYYY-MM-DD HH:MM:SS'.
     """
 
-    # Convert the single-row dict into a DataFrame
-    row_df = pd.DataFrame([data])
+    # 1) Filter & order your dict so it only has the columns you expect
+    row = {col: data.get(col, "") for col in FIELDNAMES}
 
-    # Determine if we need to write the header
+    # 2) Build a single-row DataFrame with that exact column order
+    df_new = pd.DataFrame([row], columns=FIELDNAMES)
+
+    # 3) If your run_timestamp is a Python datetime, convert it to dtype datetime64
+    #    so pandas can apply date_format.  Otherwise, it'll just echo your string.
+    if not pd.api.types.is_datetime64_any_dtype(df_new["run_timestamp"]):
+        try:
+            df_new["run_timestamp"] = pd.to_datetime(
+                df_new["run_timestamp"],
+                infer_datetime_format=True,
+                errors="raise"
+            )
+        except Exception:
+            # fallback: assume you already formatted it as '%Y-%m-%d %H:%M:%S'
+            pass
+
+    # 4) Append to CSV
     write_header = not os.path.exists(csv_file)
-
-    # Append to CSV, formatting any datetime columns uniformly
-    row_df.to_csv(
+    df_new.to_csv(
         csv_file,
         sep=sep,
         mode="a",
@@ -316,6 +330,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
