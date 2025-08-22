@@ -16,6 +16,8 @@ LOG_DIR      = "logs"
 CSV_FILE     = os.path.join(LOG_DIR, "leslies-log.csv")
 DOCS_DIR     = "docs"
 
+QUIET = 1
+
 USERNAME     = os.getenv("LESLIES_USERNAME")
 PASSWORD     = os.getenv("LESLIES_PASSWORD")
 POOLID       = os.getenv("LESLIES_POOLID")
@@ -279,16 +281,19 @@ def main():
         append_to_csv(data)
         summary = build_test_summary(data)
 
-        post_slack_message(
-            SLACK_CHANNEL,
-            f"New water test logged during run at {human_time}:\n{summary}"
-        )
-
-        if "🚨" in summary:
+        if quiet==0:
             post_slack_message(
                 SLACK_CHANNEL,
-                "🚨 One or more readings are outside operating limits.\nFix immediately!"
+                f"New water test logged during run at {human_time}:\n{summary}"
             )
+    
+            if "🚨" in summary:
+                post_slack_message(
+                    SLACK_CHANNEL,
+                    "🚨 One or more readings are outside operating limits.\nFix immediately!"
+                )
+        else:
+            print("Quiet mode enabled, should have pinged slack here")
 
         print("📊 Generating 30-day plots…")
         plot_last_30_days(CSV_FILE)
@@ -297,6 +302,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
