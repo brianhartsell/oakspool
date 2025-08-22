@@ -37,9 +37,6 @@ jobs:
       - name: Run Flume constant water check
         run: python flume_constant_water_check.py
 
-      - name: Run Leslies Summary
-        run: python leslies-log-and-plot.py
-
       - name: Commit heartbeat file (if updated)
         run: |
           if git diff --quiet heartbeats/ logs/leslies-log.csv; then
