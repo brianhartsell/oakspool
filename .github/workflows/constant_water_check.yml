@@ -2,7 +2,7 @@ name: Flume Constant Water Check
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Every 15 minutes UTC
+    - cron: '*/30 * * * *'  # Every 30 minutes UTC
   workflow_dispatch:
 
 permissions:
@@ -37,14 +37,28 @@ jobs:
       - name: Run Flume constant water check
         run: python flume_constant_water_check.py
 
+      - name: Run Leslies Summary
+        run: python leslies-log-and-plot.py
+
       - name: Commit heartbeat file (if updated)
         run: |
-          if git diff --quiet heartbeats/; then
-            echo "No heartbeat update — skipping commit."
+          if git diff --quiet heartbeats/ logs/leslies-log.csv; then
+            echo "No update — skipping commit."
           else
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
             git add heartbeats/
+
+            git add logs/leslies-log.csv
+            git add docs/alkalinity.png
+            git add docs/calcium.png
+            git add docs/chlorine.png
+            git add docs/copper.png
+            git add docs/cyanuric_acid.png
+            git add docs/iron.png
+            git add docs/ph.png
+            git add docs/phosphates.png
+            
             git commit -m "Constant Use Check: ❤️ daily @ $(date -u)"
             git push
           fi
