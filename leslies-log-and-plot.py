@@ -136,11 +136,11 @@ def plot_last_30_days(csv_path: str):
     df.replace("N/A", 0, inplace=True)
 
     df["test_date"] = pd.to_datetime(
-        df["test_date"], format="%m/%d/%Y", errors="coerce"
+        df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
     )
     df = df.sort_values("test_date")
     cutoff = datetime.now() - timedelta(days=30)
-    recent = df[df["test_date"] >= cutoff]
+    recent = df[df["run_timestamp"] >= cutoff]
 
     plots = {
         "chlorine":      ["free_chlorine", "total_chlorine"],
@@ -176,7 +176,7 @@ def plot_last_30_days(csv_path: str):
                 c_lo, c_hi = CLOSURE_LIMITS[col]
                 mask = (y < c_lo) | (y > c_hi)
                 if mask.any():
-                    dates = recent.loc[mask, "test_date"]
+                    dates = recent.loc[mask, "run_timestamp"]
                     ax.scatter(dates, y[mask], color="red", edgecolor="black", zorder=5)
             
                 # Always draw caution and closure bands
@@ -190,7 +190,7 @@ def plot_last_30_days(csv_path: str):
                     ax.axhspan(c_hi, y_max, color="red", alpha=0.05)
 
             ax.plot(
-                recent["test_date"], y,
+                recent["run_timestamp"], y,
                 marker="o", label=format_label(col)
             )
 
@@ -280,6 +280,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
