@@ -281,7 +281,7 @@ def main():
         append_to_csv(data)
         summary = build_test_summary(data)
 
-        if quiet==0:
+        if QUIET==0:
             post_slack_message(
                 SLACK_CHANNEL,
                 f"New water test logged during run at {human_time}:\n{summary}"
@@ -302,6 +302,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
