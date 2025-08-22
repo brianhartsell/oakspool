@@ -16,7 +16,7 @@ LOG_DIR      = "logs"
 CSV_FILE     = os.path.join(LOG_DIR, "leslies-log.csv")
 DOCS_DIR     = "docs"
 
-QUIET = 1
+QUIET = 0  # zero will announce to slack, 1 will keep quiet
 
 USERNAME     = os.getenv("LESLIES_USERNAME")
 PASSWORD     = os.getenv("LESLIES_PASSWORD")
@@ -334,6 +334,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
