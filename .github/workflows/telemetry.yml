@@ -16,6 +16,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+      SLACK_BOARD_CHANNEL: ${{ secrets.SLACK_BOARD_CHANNEL }}
       SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
       FLUME_USERNAME: ${{ secrets.FLUME_USERNAME }}
       FLUME_PASSWORD: ${{ secrets.FLUME_PASSWORD }}
