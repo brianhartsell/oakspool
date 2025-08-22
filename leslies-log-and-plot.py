@@ -137,6 +137,10 @@ def plot_last_30_days(csv_path: str):
 
     df["run_timestamp"] = pd.to_datetime(df["run_timestamp"], errors="coerce")
     df["run_timestamp"] = df["run_timestamp"].dt.tz_convert(None)
+
+    print("Latest timestamp:", df["run_timestamp"].dropna().max())
+    print("Cutoff:", datetime.now() - timedelta(days=30))
+    
     df = df.sort_values("test_date")
     cutoff = datetime.now() - timedelta(days=30)
     recent = df[df["run_timestamp"] >= cutoff]
@@ -248,8 +252,6 @@ def main():
 
     central_time = datetime.now(ZoneInfo("America/Chicago"))
     human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
-    print("Latest timestamp:", df["run_timestamp"].dropna().max())
-    print("Cutoff:", datetime.now() - timedelta(days=30))
     run_timestamp = central_time.isoformat()
     data["run_timestamp"] = run_timestamp
 
@@ -281,6 +283,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
