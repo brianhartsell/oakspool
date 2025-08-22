@@ -247,10 +247,10 @@ def main():
         if isinstance(val, str) and val.strip().upper() == "N/A":
             data[key] = 0
 
-    data["run_timestamp"] = run_timestamp
     central_time = datetime.now(ZoneInfo("America/Chicago"))
     human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
     run_timestamp = central_time.isoformat()
+    data["run_timestamp"] = run_timestamp
 
     last_logged = load_last_logged_test()
 
@@ -280,6 +280,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
