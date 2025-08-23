@@ -20,6 +20,9 @@ df_recent = df[df[DATE_COLUMN] >= cutoff].copy()
 # Compute combined pressure
 df_recent["combined_press"] = df_recent["vac_press"] + df_recent["sys_press"]
 
+# Ensure missing values are NaN
+df_recent["flow"] = pd.to_numeric(df_recent["flow"], errors="coerce")
+
 # --- Plot 1: Flow rate ---
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
