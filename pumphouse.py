@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # --- Config ---
-INPUT_FILE = "data/flow.csv"
+INPUT_FILE = "logs/flow.csv"
 FLOW_PLOT = "docs/flow.png"
 PRESSURE_PLOT = "docs/press.png"
 DATE_COLUMN = "read_datetime"
