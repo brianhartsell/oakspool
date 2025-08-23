@@ -152,6 +152,8 @@ html_content = f"""<!DOCTYPE html>
     <div id="pumphouse" class="tab-content">
         <h3>🏠 Pump House</h3>
         <p>Coming soon: pump status, runtime logs, and filter pressure trends.</p>
+        <img src="flow.png" alt="Flow Rate">
+        <img src="press.png" alt="Pressures and Flow Rate">
     </div>
 </body></html>
 """
@@ -192,6 +194,7 @@ if TODAY.weekday() == 6:
         post_slack_update(channel)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
