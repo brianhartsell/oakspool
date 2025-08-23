@@ -36,8 +36,8 @@ plt.close()
 fig, ax1 = plt.subplots(figsize=(10, 4))
 
 # Primary Y axis: pressures
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", color="red")
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", color="green")
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", s=20, color="red")
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", s=20, color="green")
 ax1.set_xlabel("Date")
 ax1.set_ylabel("Pressure")
 ax1.tick_params(axis='y')
@@ -45,7 +45,7 @@ ax1.grid(True)
 
 # Secondary Y axis: flow
 ax2 = ax1.twinx()
-ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", marker="x")
+ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", s=20, marker="x")
 ax2.set_ylabel("Flow Rate")
 ax2.tick_params(axis='y')
 
