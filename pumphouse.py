@@ -21,13 +21,16 @@ df_recent = df[df[DATE_COLUMN] >= cutoff].copy()
 df_recent["combined_press"] = df_recent["vac_press"] + df_recent["sys_press"]
 
 # --- Plot 1: Flow rate ---
-plt.figure(figsize=(10, 4))
-plt.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
-plt.xlabel("Date")
-plt.xticks(rotation=45)
-plt.ylabel("Flow Rate")
-plt.title("Flow Rate Over Last 30 Days")
-plt.grid(True)
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
+ax.set_xlabel("Date")
+ax.set_ylabel("Flow Rate [gpm]")
+ax.set_title("Flow Rate Over Last 30 Days")
+ax.grid(True)
+
+# Rotate date labels
+fig.autofmt_xdate(rotation=45)
+
 plt.tight_layout()
 plt.savefig(FLOW_PLOT)
 plt.close()
@@ -36,26 +39,35 @@ plt.close()
 fig, ax1 = plt.subplots(figsize=(10, 4))
 
 # Primary Y axis: pressures
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", s=20, color="red")
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", s=20, color="green")
+ax1.plot(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", color="red", linewidth=1)
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], color="red", s=20)
+
+ax1.plot(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", color="green", linewidth=1)
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], color="green", s=20)
+
 ax1.set_xlabel("Date")
-ax1.set_ylabel("Pressure")
+ax1.set_ylabel("Pressure [psi]")
 ax1.tick_params(axis='y')
 ax1.grid(True)
 
+
 # Secondary Y axis: flow
 ax2 = ax1.twinx()
-ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", s=20, marker="x")
-ax2.set_ylabel("Flow Rate")
+ax2.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", linestyle="--", linewidth=1)
+ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], color="blue", s=20, marker='x')
+ax2.set_ylabel("Flow Rate [gpm]")
 ax2.tick_params(axis='y')
 
 # Legends
 lines_1, labels_1 = ax1.get_legend_handles_labels()
 lines_2, labels_2 = ax2.get_legend_handles_labels()
-ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
+ax1.legend(lines_1 + lines_2, labels_1 + labels_2)
 
 plt.title("Pressures and Flow Over Last 30 Days")
-plt.xticks(rotation=45)
+
+# Rotate date labels
+fig.autofmt_xdate(rotation=45)
+
 plt.tight_layout()
 plt.savefig(PRESSURE_PLOT)
 plt.close()
