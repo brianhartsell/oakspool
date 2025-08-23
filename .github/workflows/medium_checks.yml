@@ -38,28 +38,23 @@ jobs:
           export TZ="America/Chicago"
 
       - name: Run Leslies Summary
-        run: python leslies-log-and-plot.py       
+        run: python leslies-log-and-plot.py   
+
+        - name: Run Pump House Update  
+        run: python pumphouse.py    
 
       - name: Commit telemetry and dashboard updates
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          git add logs/leslies-log.csv
-          git add docs/alkalinity.png
-          git add docs/calcium.png
-          git add docs/chlorine.png
-          git add docs/copper.png
-          git add docs/cyanuric_acid.png
-          git add docs/iron.png
-          git add docs/ph.png
-          git add docs/phosphates.png
+          git add logs/*.csv docs/*.png
 
           git status
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Leslie's update on $(date '+%Y-%m-%d %H:%M %Z')"
+            git commit -m "Leslies/pumphouse update on $(date '+%Y-%m-%d %H:%M %Z')"
             git fetch origin main
             git pull --rebase origin main
             git push
