@@ -23,6 +23,8 @@ df_recent["combined_press"] = df_recent["vac_press"] + df_recent["sys_press"]
 # Ensure missing values are NaN
 df_recent["flow"] = pd.to_numeric(df_recent["flow"], errors="coerce")
 
+df_recent.set_index(DATE_COLUMN, inplace=True)
+
 # --- Plot 1: Flow rate ---
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
@@ -35,6 +37,7 @@ ax.grid(True)
 fig.autofmt_xdate(rotation=45)
 
 plt.tight_layout()
+print("Saving flow plot with", df_recent["flow"].notna().sum(), "valid points")
 plt.savefig(FLOW_PLOT)
 plt.close()
 
@@ -72,5 +75,6 @@ plt.title("Pressures and Flow Over Last 30 Days")
 fig.autofmt_xdate(rotation=45)
 
 plt.tight_layout()
+print("Saving flow plot with", df_recent["flow"].notna().sum(), "valid points")
 plt.savefig(PRESSURE_PLOT)
 plt.close()
