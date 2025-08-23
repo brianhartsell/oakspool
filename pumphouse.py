@@ -34,7 +34,7 @@ ax.set_title("Flow Rate Over Last 30 Days")
 ax.grid(True)
 
 # Rotate date labels
-fig.autofmt_xdate(rotation=45)
+fig.autofmt_xdate(rotation=30)
 
 plt.tight_layout()
 print("Saving flow plot with", df_recent["flow"].notna().sum(), "valid points")
@@ -72,7 +72,7 @@ ax1.legend(lines_1 + lines_2, labels_1 + labels_2)
 plt.title("Pressures and Flow Over Last 30 Days")
 
 # Rotate date labels
-fig.autofmt_xdate(rotation=45)
+fig.autofmt_xdate(rotation=30)
 
 plt.tight_layout()
 print("Saving flow plot with", df_recent["flow"].notna().sum(), "valid points")
