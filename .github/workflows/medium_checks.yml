@@ -40,7 +40,7 @@ jobs:
       - name: Run Leslies Summary
         run: python leslies-log-and-plot.py   
 
-        - name: Run Pump House Update  
+      - name: Run Pump House Update  
         run: python pumphouse.py    
 
       - name: Commit telemetry and dashboard updates
