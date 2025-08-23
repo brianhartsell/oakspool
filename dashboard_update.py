@@ -138,7 +138,7 @@ html_content = f"""<!DOCTYPE html>
 
     <div id="chemicals" class="tab-content">
         <h3>Chemical History</h3>
-        <p>Plots below are auto-generated from test logs.</p>
+        <p>Plots below are auto-generated from test logs.  Green band is Leslie's recommended range, red indicates a state required limit, yellow is a caution area between the two.</p>
         <img src="ph.png" alt="pH Levels">
         <img src="chlorine.png" alt="Chlorine Levels">
         <img src="alkalinity.png" alt="Alkalinity">
@@ -194,6 +194,7 @@ if TODAY.weekday() == 6:
         post_slack_update(channel)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
+
 
 
 
