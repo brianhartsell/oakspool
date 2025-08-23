@@ -91,8 +91,8 @@ def load_last_logged_test() -> dict:
         return rows[-1] if rows else {}
 
 def is_duplicate_test(new_data: dict, last_data: dict) -> bool:
-    keys_to_compare = [k for k in FIELDNAMES if k != ""]
-    return all(str(new_data.get(k)) == str(last_data.get(k)) for k in keys_to_compare)
+    keys_to_compare = [k for k in FIELDNAMES if k != "run_timestamp"]
+    return all(str(new_data.get(k)).strip() == str(last_data.get(k)).strip() for k in keys_to_compare)
 
 def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
     """
@@ -334,6 +334,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
