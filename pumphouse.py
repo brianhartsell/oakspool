@@ -24,6 +24,7 @@ df_recent["combined_press"] = df_recent["vac_press"] + df_recent["sys_press"]
 plt.figure(figsize=(10, 4))
 plt.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
 plt.xlabel("Date")
+plt.xticks(rotation=45)
 plt.ylabel("Flow Rate")
 plt.title("Flow Rate Over Last 30 Days")
 plt.grid(True)
@@ -35,8 +36,8 @@ plt.close()
 fig, ax1 = plt.subplots(figsize=(10, 4))
 
 # Primary Y axis: pressures
-ax1.plot(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", color="red")
-ax1.plot(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", color="green")
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", color="red")
+ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", color="green")
 ax1.set_xlabel("Date")
 ax1.set_ylabel("Pressure")
 ax1.tick_params(axis='y')
@@ -44,7 +45,7 @@ ax1.grid(True)
 
 # Secondary Y axis: flow
 ax2 = ax1.twinx()
-ax2.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", linestyle="--")
+ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", marker="x")
 ax2.set_ylabel("Flow Rate")
 ax2.tick_params(axis='y')
 
@@ -54,6 +55,7 @@ lines_2, labels_2 = ax2.get_legend_handles_labels()
 ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
 
 plt.title("Pressures and Flow Over Last 30 Days")
+plt.xticks(rotation=45)
 plt.tight_layout()
 plt.savefig(PRESSURE_PLOT)
 plt.close()
