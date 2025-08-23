@@ -27,7 +27,7 @@ df_recent.set_index(DATE_COLUMN, inplace=True)
 
 # --- Plot 1: Flow rate ---
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue")
+ax.plot(df_recent.index, df_recent["flow"], label="Flow Rate", color="blue")
 ax.set_xlabel("Date")
 ax.set_ylabel("Flow Rate [gpm]")
 ax.set_title("Flow Rate Over Last 30 Days")
@@ -45,11 +45,11 @@ plt.close()
 fig, ax1 = plt.subplots(figsize=(10, 4))
 
 # Primary Y axis: pressures
-ax1.plot(df_recent[DATE_COLUMN], df_recent["combined_press"], label="Vac + Sys Pressure", color="red", linewidth=1)
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["combined_press"], color="red", s=20)
+ax1.plot(df_recent.index, df_recent["combined_press"], label="Vac + Sys Pressure", color="red", linewidth=1)
+ax1.scatter(df_recent.index, df_recent["combined_press"], color="red", s=20)
 
-ax1.plot(df_recent[DATE_COLUMN], df_recent["f1_press"], label="F1 Pressure", color="green", linewidth=1)
-ax1.scatter(df_recent[DATE_COLUMN], df_recent["f1_press"], color="green", s=20)
+ax1.plot(df_recent.index, df_recent["f1_press"], label="F1 Pressure", color="green", linewidth=1)
+ax1.scatter(df_recent.index, df_recent["f1_press"], color="green", s=20)
 
 ax1.set_xlabel("Date")
 ax1.set_ylabel("Pressure [psi]")
@@ -59,8 +59,8 @@ ax1.grid(True)
 
 # Secondary Y axis: flow
 ax2 = ax1.twinx()
-ax2.plot(df_recent[DATE_COLUMN], df_recent["flow"], label="Flow Rate", color="blue", linestyle="--", linewidth=1)
-ax2.scatter(df_recent[DATE_COLUMN], df_recent["flow"], color="blue", s=20, marker='x')
+ax2.plot(df_recent.index, df_recent["flow"], label="Flow Rate", color="blue", linestyle="--", linewidth=1)
+ax2.scatter(df_recent.index, df_recent["flow"], color="blue", s=20, marker='x')
 ax2.set_ylabel("Flow Rate [gpm]")
 ax2.tick_params(axis='y')
 
