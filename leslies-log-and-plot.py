@@ -142,7 +142,20 @@ def build_test_summary(data: dict) -> str:
     lines = []
     for key in keys:
         val = data.get(key)
-        emoji = get_status_emoji(key, val)
+
+         # Special case: flag if free chlorine is 0.2 or more below total chlorine
+        if key == "free_chlorine":
+            try:
+                fc = float(val)
+                tc = float(data.get("total_chlorine", 0))
+                if tc - fc >= 0.2:
+                    emoji = "⚠️"  # or "🚨" if you want it more severe
+                else:
+                    emoji = get_status_emoji(key, val)
+            except (TypeError, ValueError):
+                emoji = "❓"
+        else:
+            emoji = get_status_emoji(key, val)
         label = format_label(key)
         value = format_value(key, val)
         lines.append(f"{emoji} {label}: {value}")
@@ -334,6 +347,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
