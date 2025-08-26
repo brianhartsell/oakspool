@@ -39,7 +39,7 @@ TARGET_RANGES = {
 }
 
 CLOSURE_LIMITS = {
-    "total_chlorine": (0.5, 5.5),
+    "total_chlorine": (0.5, 5.0),
     "ph": (6.8, 8.2)
 }
 
