@@ -21,6 +21,7 @@
         <button class="tab-button" id="btn-water" onclick="showTab('water')">Water Use</button>
         <button class="tab-button" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
         <button class="tab-button" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump House</button>
+        <button class="tab-button" id="btn-raw" onclick="showTab('raw')">Raw Data</button>
     </div>
 
     <div id="water" class="tab-content">
@@ -31,8 +32,7 @@
         <h3>📅 Last 30 Days of Use</h3>
 <table border="1" cellpadding="6" cellspacing="0">
     <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
-    <tbody><tr><td>2025-08-02</td><td>0.25</td><td>$1.67</td></tr>
-<tr><td>2025-08-03</td><td>3.91</td><td>$26.17</td></tr>
+    <tbody><tr><td>2025-08-03</td><td>3.91</td><td>$26.17</td></tr>
 <tr><td>2025-08-04</td><td>11.23</td><td>$75.25</td></tr>
 <tr><td>2025-08-05</td><td>38.21</td><td>$255.98</td></tr>
 <tr><td>2025-08-06</td><td>14.25</td><td>$95.45</td></tr>
@@ -60,18 +60,12 @@
 <tr><td>2025-08-28</td><td>5.86</td><td>$39.28</td></tr>
 <tr><td>2025-08-29</td><td>9.07</td><td>$60.77</td></tr>
 <tr><td>2025-08-30</td><td>4.34</td><td>$29.08</td></tr>
-<tr><td>2025-08-31</td><td>12.48</td><td>$83.63</td></tr></tbody>
+<tr><td>2025-08-31</td><td>12.50</td><td>$83.76</td></tr>
+<tr><td>2025-09-01</td><td>7.81</td><td>$52.30</td></tr></tbody>
 </table>
 
         
-    <h3>💰 Season Usage Summary</h3>
-    <ul>
-        <li><strong>Cost so far:</strong> $3,327.56</li>
-        <li><strong>Projected remaining cost:</strong> $46.75</li>
-        <li>Based on 6.98 CCF/day × 1 days @ $6.70/CCF</li>
-    </ul>
-    
-        <p><em>Dashboard auto-updated on 2025-08-31</em></p>
+        <p><em>Dashboard auto-updated on 2025-09-01</em></p>
     </div>
 
     <div id="chemicals" class="tab-content">
@@ -94,4 +88,290 @@
         <img src="flow.png" alt="Flow Rate">
         <img src="press.png" alt="Pressures and Flow Rate">
     </div>
+
+    <div id="raw" class="tab-content">
+        
+<h3>Raw Output – Last 14 Days</h3>
+<p>One row per day, showing latest available readings from flow, usage, and chemical logs.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr><th>Date</th><th>CCF</th><th>Flow</th><th>Vac</th><th>Sys</th><th>F1</th>
+        <th>Free Cl</th><th>Total Cl</th><th>pH</th><th>Alk</th><th>Ca</th><th>CYA</th>
+        <th>Fe</th><th>Cu</th><th>Phos</th></tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>2025-09-01</td>
+        <td>7.81</td>
+        <td>210</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-31</td>
+        <td>12.50</td>
+        <td>220</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-30</td>
+        <td>4.34</td>
+        <td>130</td>
+        <td>6</td>
+        <td>24</td>
+        <td>22</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-29</td>
+        <td>9.07</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-28</td>
+        <td>5.86</td>
+        <td>280</td>
+        <td>7</td>
+        <td>18.5</td>
+        <td>15</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-27</td>
+        <td>14.25</td>
+        <td>210</td>
+        <td>6.5</td>
+        <td>21.5</td>
+        <td>19</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-26</td>
+        <td>6.50</td>
+        <td>210</td>
+        <td>7.5</td>
+        <td>20.5</td>
+        <td>18</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-25</td>
+        <td>0.01</td>
+        <td>210</td>
+        <td>7.5</td>
+        <td>20</td>
+        <td>18</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-24</td>
+        <td>11.37</td>
+        <td>235</td>
+        <td>6.5</td>
+        <td>20</td>
+        <td>17.5</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-23</td>
+        <td>18.48</td>
+        <td>280</td>
+        <td>8.5</td>
+        <td>18</td>
+        <td>14</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-22</td>
+        <td>4.77</td>
+        <td>250</td>
+        <td>9</td>
+        <td>18.5</td>
+        <td>15</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-21</td>
+        <td>15.12</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-20</td>
+        <td>0.02</td>
+        <td>180</td>
+        <td>6</td>
+        <td>23</td>
+        <td>21</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-19</td>
+        <td>0.20</td>
+        <td>190</td>
+        <td>6.5</td>
+        <td>22.5</td>
+        <td>20</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    
+    <tr>
+        <td>2025-08-18</td>
+        <td>0.28</td>
+        <td>220</td>
+        <td>7</td>
+        <td>21</td>
+        <td>19</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    </tbody>
+</table>
+
+    </div>
+    
 </body></html>
