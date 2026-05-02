@@ -319,6 +319,18 @@ def main():
     last_logged = load_last_logged_test()
 
     print(data)
+
+    # --- SAFETY PATCH: Skip run if Leslie's returned no usable data ---
+    required_keys = ["test_date", "free_chlorine", "total_chlorine", "ph"]
+
+    missing = [k for k in required_keys if k not in data or not data[k]]
+
+    if missing:
+        print("❌ Leslie’s API returned incomplete data, skipping this run.")
+        print("Missing:", missing)
+        print("Raw data:", data)
+        return
+    
     if is_duplicate_test(data, last_logged):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
