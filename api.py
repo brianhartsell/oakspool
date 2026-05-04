@@ -147,14 +147,6 @@ class LesliesPoolApi:
                     continue
                 return {}
         
-            # If we've exhausted all retries without success
-            if 'data' not in locals():
-                _LOGGER.error("Failed to fetch data after all retries")
-                if self._last_successful_values:
-                    _LOGGER.info("Returning last cached values due to fetch failure")
-                    return self._last_successful_values
-                return {}
-
         # Process the data if we successfully retrieved it
         values = {}
         try:

@@ -26,19 +26,7 @@ CCF_CONVERSION = 748.05
 central = pytz.timezone('US/Central')
 now = datetime.datetime.now(pytz.utc).astimezone(central)
 
-# === Pool seasons
-POOL_SEASONS = [
-    {"year": 2023, "open": datetime.date(2023, 5, 26), "close": datetime.date(2023, 9, 3), "rate": 5.60},
-    {"year": 2024, "open": datetime.date(2024, 5, 24), "close": datetime.date(2024, 9, 1), "rate": 6.15},
-    {"year": 2025, "open": datetime.date(2025, 5, 23), "close": datetime.date(2025, 8, 31), "rate": 6.70},
-]
-
-def get_rate_for_date(date_str):
-    year = int(date_str[:4])
-    for s in POOL_SEASONS:
-        if s["year"] == year:
-            return s["rate"]
-    return 0
+from seasons_loader import get_rate_for_date, get_season_by_year, load
 
 def generate_sparkline(values):
     bars = "▁▂▃▄▅▆▇█"
@@ -162,10 +150,20 @@ with open(CSV_FILENAME, newline='') as f:
 df = pd.DataFrame(df_rows)
 
 records = []
-for season in POOL_SEASONS:
-    start = season["open"]
-    year = season["year"]
-    sub = df[(df["year"] == year) & (df["date"] >= start)].copy()
+today_iso = now.date().isoformat()
+current_season = get_season_by_year(today_iso[:4])
+for season in load(path=os.path.join(os.path.dirname(__file__), "seasons.txt")):
+    start = season.open
+    year = season.year
+    if year == current_season.year:
+        # Current/open season: show data from open through today
+        end = now.date()
+    else:
+        # Closed season: show only within the season dates
+        end = season.close
+    sub = df[(df["year"] == year) & (df["date"] >= start) & (df["date"] <= end)].copy()
+    if sub.empty:
+        continue
     sub["date"] = pd.to_datetime(sub["date"])
     start_ts = pd.to_datetime(start)
     sub["days_since_open"] = (sub["date"] - start_ts).dt.days

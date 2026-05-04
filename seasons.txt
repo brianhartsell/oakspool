@@ -1,0 +1,5 @@
+# Pool seasons (year open-month open-day close-month close-day rate)
+2023 5 26 9 3 5.60
+2024 5 24 9 1 6.15
+2025 5 23 8 31 6.70
+2026 5 25 9 7 7.20

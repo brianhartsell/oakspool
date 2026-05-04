@@ -35,18 +35,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 central = pytz.timezone("US/Central")
 TODAY = datetime.datetime.now(central).date()
 
-# === Pool season rates
-SEASONS = [
-    {"year": 2023, "open": datetime.date(2023, 5, 26), "close": datetime.date(2023, 9, 3), "rate": 5.60},
-    {"year": 2024, "open": datetime.date(2024, 5, 24), "close": datetime.date(2024, 9, 1), "rate": 6.15},
-    {"year": 2025, "open": datetime.date(2025, 5, 23), "close": datetime.date(2025, 8, 31), "rate": 6.70},
-]
-def get_rate(date_str):
-    year = int(date_str[:4])
-    for s in SEASONS:
-        if s["year"] == year:
-            return s["rate"]
-    return 0.0
+from seasons_loader import get_season_by_year, get_rate as _seasons_get_rate, get_current_season
 
 # === Load full usage log
 all_rows = []
@@ -56,7 +45,7 @@ with open(CSV_LOG, newline="") as f:
         date_str = row["date"]
         date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
         ccf = float(row["ccf"])
-        rate = get_rate(date_str)
+        rate = _seasons_get_rate(date_str)
         cost = round(ccf * rate, 2)
         all_rows.append({
             "date": date_str,
@@ -82,21 +71,21 @@ usage_table_html = f"""<h3>📅 Last 30 Days of Use</h3>
 """
 
 # === Generate season summary using full all_rows slice
-season = next((s for s in SEASONS if s["open"] <= TODAY <= s["close"]), None)
+current = get_current_season(TODAY)
 projection_html = ""
-if season:
-    season_rows = [r for r in all_rows if season["open"] <= r["date_obj"] <= TODAY]
+if current:
+    season_rows = [r for r in all_rows if current.open <= r["date_obj"] <= TODAY]
     used_ccf = sum(r["ccf"] for r in season_rows)
-    days_left = (season["close"] - TODAY).days + 1
+    days_left = (current.close - TODAY).days + 1
     recent_avg = sum(r["ccf"] for r in recent_rows) / len(recent_rows) if recent_rows else 0.0
-    cost_so_far = used_ccf * season["rate"]
-    projected_cost = recent_avg * days_left * season["rate"]
+    cost_so_far = used_ccf * current.rate
+    projected_cost = recent_avg * days_left * current.rate
     projection_html = f"""
     <h3>💰 Season Usage Summary</h3>
     <ul>
         <li><strong>Cost so far:</strong> ${cost_so_far:,.2f}</li>
         <li><strong>Projected remaining cost:</strong> ${projected_cost:,.2f}</li>
-        <li>Based on {recent_avg:.2f} CCF/day × {days_left} days @ ${season['rate']:.2f}/CCF</li>
+        <li>Based on {recent_avg:.2f} CCF/day × {days_left} days @ ${current.rate:.2f}/CCF</li>
     </ul>
     """
 
@@ -287,16 +276,3 @@ if TODAY.weekday() == 6:
         post_slack_update(channel)
 else:
     post_slack_update(HEARTBEAT_CHANNEL)
-
-
-
-
-
-
-
-
-
-
-
-
-
