@@ -302,7 +302,8 @@ def main():
         pool_name=POOLNAME
     )
     if not api.authenticate():
-        raise RuntimeError("⚠️ Leslie’s login failed")
+        print("⚠️ Leslie's login failed, skipping this run.")
+        return
 
     data = api.fetch_water_test_data()
     
