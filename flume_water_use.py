@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import pytz
 import pandas as pd
 import shutil
+from seasons_loader import load, get_season_by_year
+
 # from dotenv import load_dotenv
 
 # === Load environment variables ===
@@ -151,11 +153,11 @@ df = pd.DataFrame(df_rows)
 
 records = []
 today_iso = now.date().isoformat()
-current_season = get_season_by_year(today_iso[:4])
+current_season = get_season_by_year(int(today_iso[:4]))
 for season in load(path=os.path.join(os.path.dirname(__file__), "seasons.txt")):
     start = season.open
     year = season.year
-    if year == current_season.year:
+    if current_season is not None and year == current_season.year:
         # Current/open season: show data from open through today
         end = now.date()
     else:
