@@ -219,6 +219,12 @@ def plot_last_30_days(csv_file):
         print("⚠️ No recent data found. Skipping plot.")
         return
 
+    # Season gate: only plot during open season
+    current = get_current_season(TODAY)
+    if current and (latest.date() < current.open or latest.date() > current.close):
+        print(f"🌱 Outside pool season ({current.open} - {current.close}), skipping chemical plots.")
+        return
+
     for name, cols in plots.items():
         fig, ax = plt.subplots(figsize=(10, 4))
         y_all = pd.Series(dtype="float64")

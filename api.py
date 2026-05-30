@@ -1,8 +1,12 @@
 """API client for Leslie's Pool Water Tests."""
+"""Claude fix 5/30"""
 
+import logging
 import requests
 from bs4 import BeautifulSoup
 from bs4 import Tag
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class LesliesPoolApi:
@@ -24,9 +28,32 @@ class LesliesPoolApi:
         self._last_successful_values = {}  # Cache to store last valid data
         self._last_successful_fetch = None  # Timestamp of last successful fetch
 
+    # Realistic browser headers used across all requests
+    BROWSER_HEADERS = {
+        "user-agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "accept-language": "en-US,en;q=0.5",
+        "accept-encoding": "gzip, deflate, br",
+        "connection": "keep-alive",
+        "upgrade-insecure-requests": "1",
+    }
+
     def authenticate(self) -> bool:
         """Authenticate the user and start a session."""
-        response = self.session.get(self.LOGIN_PAGE_URL)
+        response = self.session.get(self.LOGIN_PAGE_URL, headers=self.BROWSER_HEADERS)
+
+        if response.status_code != 200:
+            _LOGGER.error(
+                "Login page returned HTTP %s: %s",
+                response.status_code,
+                response.text[:200],
+            )
+            return False
+
         soup = BeautifulSoup(response.text, "html.parser")
         csrf_token_tag = soup.find("input", {"name": "csrf_token"})
 
@@ -35,12 +62,21 @@ class LesliesPoolApi:
             csrf_token = csrf_token_tag["value"]
 
         if not csrf_token:
+            _LOGGER.error(
+                "CSRF token not found in login page (status %s). "
+                "Page may have changed or the request was blocked. "
+                "Snippet: %s",
+                response.status_code,
+                response.text[:300],
+            )
             return False
 
-        headers = {
+        login_headers = {
+            **self.BROWSER_HEADERS,
             "accept": "application/json, text/javascript, */*; q=0.01",
             "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "user-agent": "Mozilla/5.0",
+            "referer": self.LOGIN_PAGE_URL,
+            "origin": "https://lesliespool.com",
         }
 
         payload = {
@@ -50,16 +86,23 @@ class LesliesPoolApi:
         }
 
         login_response = self.session.post(
-            self.LOGIN_URL, headers=headers, data=payload
+            self.LOGIN_URL, headers=login_headers, data=payload
         )
-        return login_response.status_code == 200
+
+        if login_response.status_code != 200:
+            _LOGGER.error(
+                "Login POST returned HTTP %s: %s",
+                login_response.status_code,
+                login_response.text[:200],
+            )
+            return False
+
+        return True
 
     def fetch_water_test_data(self) -> dict:
         """Fetch water test data for the pool."""
         import json
-        import logging
 
-        _LOGGER = logging.getLogger(__name__)
         _LOGGER.debug("Fetching water test data")
         
         # Try to fetch the data with authentication retry logic
@@ -74,7 +117,8 @@ class LesliesPoolApi:
                 
                 # First navigate to the water test page to set up session and cookies
                 landing_response = self.session.get(
-                    f"https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/WaterTest-Landing?poolProfileId={self.pool_profile_id}&poolName={self.pool_name}"
+                    f"https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/WaterTest-Landing?poolProfileId={self.pool_profile_id}&poolName={self.pool_name}",
+                    headers=self.BROWSER_HEADERS,
                 )
                 
                 # Check if we were redirected to the login page
@@ -90,10 +134,12 @@ class LesliesPoolApi:
                 cookie_header = "; ".join([f"{key}={value}" for key, value in cookies.items()])
                 
                 headers = {
+                    **self.BROWSER_HEADERS,
                     "accept": "application/json, text/javascript, */*; q=0.01",
                     "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "referer": f"https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/WaterTest-Landing?poolProfileId={self.pool_profile_id}&poolName={self.pool_name}",
+                    "origin": "https://lesliespool.com",
                     "cookie": cookie_header,
-                    "user-agent": "Mozilla/5.0",
                 }
                 
                 payload = "poolProfileName=Pool&poolSanitizer=Salt+3000-4000"
