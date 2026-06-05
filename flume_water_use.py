@@ -170,7 +170,7 @@ for season in load(path=os.path.join(os.path.dirname(__file__), "seasons.txt")):
     start_ts = pd.to_datetime(start)
     sub["days_since_open"] = (sub["date"] - start_ts).dt.days
     sub.sort_values("date", inplace=True)
-    sub["rolling_avg"] = sub["ccf"].rolling(window=14).mean()
+    sub["rolling_avg"] = sub["ccf"].rolling(window=14, min_periods=1).mean()
     sub["label"] = str(year)
     records.append(sub[["days_since_open", "rolling_avg", "label"]])
 
