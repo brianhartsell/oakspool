@@ -73,7 +73,7 @@ function showTab(id) {
     document.getElementById(id).classList.add('active');
     document.getElementById('btn-' + id).classList.add('active');
 }
-window.onload = function() { showTab('water'); };
+window.onload = function() { showTab('summary'); };
 """
 
 
@@ -164,11 +164,27 @@ def _fmt(v, spec):
 
 # ── section builders ──────────────────────────────────────────────────────────
 
+def _summary_tab(current_season=None):
+    chem_notice = "" if current_season else (
+        '<p class="note">Pool is closed — chemical plots reflect last season\'s data.</p>'
+    )
+    return f"""
+<h3>Flow – Last 7 Days</h3>
+<img src="flow_7d.png" alt="7-day flow rate">
+<h3>Season Water Use Comparison</h3>
+<img src="flume_season_comparison.png" alt="Season comparison">
+<h3>pH</h3>
+{chem_notice}<img src="ph.png" alt="pH">
+<h3>Chlorine</h3>
+<img src="chlorine.png" alt="Chlorine">
+"""
+
+
 def _water_tab(all_flume, today):
     recent = [r for r in all_flume if 0 <= (today - r["date_obj"]).days < 30]
     table_rows = "\n".join(
         f"<tr><td>{r['date']}</td><td>{r['ccf']:.3f}</td><td>${r['cost']:.2f}</td></tr>"
-        for r in recent
+        for r in reversed(recent)
     )
     usage_table = f"""
 <h3>Last 30 Days of Use</h3>
@@ -417,11 +433,13 @@ def main():
 <body>
 <h1>Oaks Pool Dashboard</h1>
 <div class="tabs">
+  <button class="tab-btn" id="btn-summary"   onclick="showTab('summary')">Summary</button>
   <button class="tab-btn" id="btn-water"     onclick="showTab('water')">Water Use</button>
   <button class="tab-btn" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
   <button class="tab-btn" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump House</button>
   <button class="tab-btn" id="btn-raw"       onclick="showTab('raw')">Raw Data</button>
 </div>
+<div id="summary"   class="tab-pane">{_summary_tab(current_season)}</div>
 <div id="water"     class="tab-pane">{_water_tab(all_flume, today)}</div>
 <div id="chemicals" class="tab-pane">{_chemicals_tab(current_season)}</div>
 <div id="pumphouse" class="tab-pane">{_pumphouse_tab(now_ct, current_season)}</div>
