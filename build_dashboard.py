@@ -61,6 +61,9 @@ li { margin: 4px 0; line-height: 1.5; }
 .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #1a6b6c; margin-top: 3px; }
 .updated { color: #888; font-size: 12px; margin-top: 20px; }
+@media (max-width: 500px) {
+  .tab-btn { padding: 8px 10px; font-size: 12px; }
+}
 .status.off  { background: #e9ecef; color: #495057; }
 .notice { background: #e9ecef; border-left: 3px solid #aaa; padding: 8px 14px;
           margin: 0 0 16px; border-radius: 3px; font-size: 13px; color: #495057; }
@@ -434,10 +437,10 @@ def main():
 <h1>Oaks Pool Dashboard</h1>
 <div class="tabs">
   <button class="tab-btn" id="btn-summary"   onclick="showTab('summary')">Summary</button>
-  <button class="tab-btn" id="btn-water"     onclick="showTab('water')">Water Use</button>
+  <button class="tab-btn" id="btn-water"     onclick="showTab('water')">Water</button>
   <button class="tab-btn" id="btn-chemicals" onclick="showTab('chemicals')">Chemicals</button>
-  <button class="tab-btn" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump House</button>
-  <button class="tab-btn" id="btn-raw"       onclick="showTab('raw')">Raw Data</button>
+  <button class="tab-btn" id="btn-pumphouse" onclick="showTab('pumphouse')">Pump</button>
+  <button class="tab-btn" id="btn-raw"       onclick="showTab('raw')">Raw</button>
 </div>
 <div id="summary"   class="tab-pane">{_summary_tab(current_season)}</div>
 <div id="water"     class="tab-pane">{_water_tab(all_flume, today)}</div>
