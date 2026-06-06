@@ -1,20 +1,15 @@
 import os
-import json
-import base64
 import requests
 import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+from flume_auth import get_flume_connection
 
 # === Config ===
-SILENT_MODE = False  # Set to False to send alerts to Slack
+SILENT_MODE = False
 
 # === Load .env
 load_dotenv()
-USERNAME = os.getenv("FLUME_USERNAME")
-PASSWORD = os.getenv("FLUME_PASSWORD")
-CLIENT_ID = os.getenv("FLUME_CLIENT_ID")
-CLIENT_SECRET = os.getenv("FLUME_CLIENT_SECRET")
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
@@ -30,7 +25,6 @@ today_str = now.date().isoformat()
 since = since_dt.strftime('%Y-%m-%dT%H:%M:%S')
 until = now.strftime('%Y-%m-%dT%H:%M:%S')
 
-# === Visual confirmation of query window
 print("Local range:", since_dt.strftime('%Y-%m-%d %H:%M:%S'), "→", now.strftime('%Y-%m-%d %H:%M:%S'))
 print("Formatted for Flume:", since, "→", until)
 
@@ -51,21 +45,7 @@ if not already_sent:
         f.write(today_str + "\n")
 
 # === Flume auth
-auth = requests.post("https://api.flumetech.com/oauth/token", data={
-    "grant_type": "password",
-    "client_id": CLIENT_ID,
-    "client_secret": CLIENT_SECRET,
-    "username": USERNAME,
-    "password": PASSWORD,
-})
-access_token = auth.json()["data"][0]["access_token"]
-headers = {"Authorization": f"Bearer {access_token}"}
-user_id = json.loads(base64.urlsafe_b64decode(access_token.split('.')[1] + "=="))["user_id"]
-
-# === Device ID (type 2)
-devices = requests.get(f"https://api.flumetech.com/users/{user_id}/devices", headers=headers).json()
-device_id = [d for d in devices["data"] if d["type"] == 2][0]["id"]
-query_url = f"https://api.flumetech.com/users/{user_id}/devices/{device_id}/query"
+headers, query_url = get_flume_connection()
 
 # === Query both MIN and HR buckets
 payload = {
@@ -89,17 +69,10 @@ hour_total = sum(hour_values)
 
 total_minutes = len(minute_values)
 zero_count = sum(v == 0 for v in minute_values)
+nonzero_pct = 100 * (1 - zero_count / total_minutes) if total_minutes else 0
 
 print(f"🧮 Minute readings received: {total_minutes}")
 print(f"🕳️ Zero-flow minutes: {zero_count}")
-
-# === Evaluate minute-level density
-total_minutes = len(minute_values)
-zero_count = sum(v == 0 for v in minute_values)
-nonzero_pct = 100 * (1 - zero_count / total_minutes) if total_minutes else 0
-
-print(f"Readings received: {total_minutes}")
-print(f"Zero-flow minutes: {zero_count}")
 print(f"Non-zero percentage: {nonzero_pct:.2f}%")
 
 # === Alert logic
@@ -132,6 +105,3 @@ elif not SILENT_MODE and hour_total > 0 and not minute_values:
                   json=payload)
 else:
     print("Water quiet or silent mode active — no alert sent.")
-
-
-

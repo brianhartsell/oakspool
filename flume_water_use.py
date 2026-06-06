@@ -1,34 +1,12 @@
 import os
 import csv
-import json
-import base64
 import requests
 import datetime
 import matplotlib.pyplot as plt
 import pytz
 import pandas as pd
-import shutil
-from seasons_loader import load, get_season_by_year
-
-# from dotenv import load_dotenv
-
-# === Load environment variables ===
-# load_dotenv()
-USERNAME = os.getenv("FLUME_USERNAME")
-PASSWORD = os.getenv("FLUME_PASSWORD")
-CLIENT_ID = os.getenv("FLUME_CLIENT_ID")
-CLIENT_SECRET = os.getenv("FLUME_CLIENT_SECRET")
-SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
-SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
-HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
-CSV_FILENAME = 'logs/flume_usage_log.csv'
-HEARTBEAT_LOG = "heartbeats/flume_heartbeat_usage.log"
-CCF_CONVERSION = 748.05
-
-central = pytz.timezone('US/Central')
-now = datetime.datetime.now(pytz.utc).astimezone(central)
-
 from seasons_loader import get_rate_for_date, get_season_by_year, load
+from flume_auth import get_flume_connection
 
 def generate_sparkline(values):
     bars = "▁▂▃▄▅▆▇█"
@@ -45,14 +23,17 @@ def format_usage_table(dates, values):
     rows.append("```")
     return "\n".join(rows)
 
-# === Load CSV log
-updated_data = {}
-with open(CSV_FILENAME, newline='') as f:
-    for row in csv.DictReader(f):
-        updated_data[row["date"]] = float(row["ccf"])
+SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
+HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
+CSV_FILENAME = 'logs/flume_usage_log.csv'
+HEARTBEAT_LOG = "heartbeats/flume_heartbeat_usage.log"
+CCF_CONVERSION = 748.05
+
+central = pytz.timezone('US/Central')
+now = datetime.datetime.now(pytz.utc).astimezone(central)
 
 # === Heartbeat check and post (first run of the day)
-HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 today_str = now.date().isoformat()
 
 already_sent = False
@@ -67,30 +48,14 @@ if not already_sent:
         "text": msg,
         "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": msg}}]
     }
-    response = requests.post("https://slack.com/api/chat.postMessage",
-                             headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
-                             json=payload)
+    requests.post("https://slack.com/api/chat.postMessage",
+                  headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
+                  json=payload)
     with open(HEARTBEAT_LOG, "a") as f:
         f.write(today_str + "\n")
 
 # === Authenticate with Flume
-auth = requests.post(
-    "https://api.flumetech.com/oauth/token",
-    data={
-        "grant_type": "password",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "username": USERNAME,
-        "password": PASSWORD,
-    }
-)
-access_token = auth.json()["data"][0]["access_token"]
-headers = {"Authorization": f"Bearer {access_token}"}
-user_id = json.loads(base64.urlsafe_b64decode(access_token.split('.')[1] + "=="))["user_id"]
-
-device = requests.get(f"https://api.flumetech.com/users/{user_id}/devices", headers=headers)
-device_id = [d for d in device.json()["data"] if d["type"] == 2][0]["id"]
-query_url = f"https://api.flumetech.com/users/{user_id}/devices/{device_id}/query"
+headers, query_url = get_flume_connection()
 
 # === Pull and plot 30-day usage
 chart_payload = {
@@ -118,9 +83,10 @@ plt.close()
 
 # === Read existing log
 existing = {}
-with open(CSV_FILENAME, newline='') as f:
-    for row in csv.DictReader(f):
-        existing[row["date"]] = float(row["ccf"])
+if os.path.exists(CSV_FILENAME):
+    with open(CSV_FILENAME, newline='') as f:
+        for row in csv.DictReader(f):
+            existing[row["date"]] = float(row["ccf"])
 
 # === Only overwrite within last 3 days
 cutoff = (now - datetime.timedelta(days=3)).date()
@@ -135,13 +101,15 @@ for entry in chart_data:
     else:
         new_entries[date_str] = existing[date_str]  # preserve old
 
-# === Write merged log, sorted by date
+# === Write merged log atomically, sorted by date
 merged = {**existing, **new_entries}
-with open(CSV_FILENAME, "w", newline="") as f:
+tmp_path = CSV_FILENAME + ".tmp"
+with open(tmp_path, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["date", "ccf"])
     for d in sorted(merged):
         writer.writerow([d, merged[d]])
+os.replace(tmp_path, CSV_FILENAME)
 
 # === Pool season rolling average comparison
 df_rows = []
@@ -185,5 +153,3 @@ plt.legend(title="Year")
 plt.tight_layout()
 plt.savefig("docs/flume_season_comparison.png")
 plt.close()
-
-

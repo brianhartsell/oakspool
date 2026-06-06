@@ -1,12 +1,10 @@
 import os
 import csv
-from datetime import datetime, timedelta
-import requests
 from datetime import datetime
+import requests
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from api import LesliesPoolApi
 
@@ -119,12 +117,13 @@ def append_to_csv(data: dict, csv_file: str = CSV_FILE, sep: str = ","):
             # fallback: assume you already formatted it as '%Y-%m-%d %H:%M:%S'
             pass
 
-    # 4) Append to CSV
-    with open(csv_file, "r") as f:
-        lines = [line for line in f if line.strip()]
-    with open(csv_file, "w") as f:
-        f.writelines(lines)
+    # 4) Append to CSV — check existence before any file ops to get write_header right
     write_header = not os.path.exists(csv_file)
+    if not write_header:
+        with open(csv_file, "r") as f:
+            lines = [line for line in f if line.strip()]
+        with open(csv_file, "w") as f:
+            f.writelines(lines)
     with open(csv_file, "a", newline="") as f:
         df_new.to_csv(
             f,
@@ -143,13 +142,13 @@ def build_test_summary(data: dict) -> str:
     for key in keys:
         val = data.get(key)
 
-         # Special case: flag if free chlorine is 0.2 or more below total chlorine
+        # Special case: flag if free chlorine is 0.2 or more below total chlorine
         if key == "free_chlorine":
             try:
                 fc = float(val)
                 tc = float(data.get("total_chlorine", 0))
                 if tc - fc >= 0.2:
-                    emoji = "⚠️"  # or "🚨" if you want it more severe
+                    emoji = "⚠️"
                 else:
                     emoji = get_status_emoji(key, val)
             except (TypeError, ValueError):
@@ -179,125 +178,6 @@ def post_slack_message(channel: str, text: str):
     else:
         print(f"⚠️ Slack post failed: {r.status_code} {r.text}")
 
-def plot_last_30_days(csv_file):
-    # Let pandas infer and convert run_timestamp into datetime64
-    df = pd.read_csv(
-            csv_file,
-            parse_dates=["run_timestamp"],
-            infer_datetime_format=True,
-            dayfirst=False,      # adjust if you ever switch day/month order
-            on_bad_lines="skip"  # optional: skip rows that totally blow up
-    )
-
-    # Drop any rows that still failed to parse
-    df = df.dropna(subset=["run_timestamp"])
-    
-    # Diagnostics
-    print("Parsed timestamps (tail):", df["run_timestamp"].tail().tolist())
-    latest = df["run_timestamp"].max()
-    cutoff = latest - pd.Timedelta(days=30)
-    print("Latest:", latest, "Cutoff:", cutoff)
-
-    recent = df[df["run_timestamp"] >= cutoff]
-    print("Rows in last 30 days:", len(recent))
-
-    plots = {
-        "chlorine":      ["free_chlorine", "total_chlorine"],
-        "ph":            ["ph"],
-        "alkalinity":    ["alkalinity"],
-        "calcium":       ["calcium"],
-        "cyanuric_acid": ["cyanuric_acid"],
-        "iron":          ["iron"],
-        "copper":        ["copper"],
-        "phosphates":    ["phosphates"],
-        "salt":          ["salt"],
-        "in_store":      ["in_store"]
-    }
-
-    latest = df["run_timestamp"].max()
-    if latest < cutoff:
-        print("⚠️ No recent data found. Skipping plot.")
-        return
-
-    # Season gate: only plot during open season
-    current = get_current_season(TODAY)
-    if current and (latest.date() < current.open or latest.date() > current.close):
-        print(f"🌱 Outside pool season ({current.open} - {current.close}), skipping chemical plots.")
-        return
-
-    for name, cols in plots.items():
-        fig, ax = plt.subplots(figsize=(10, 4))
-        y_all = pd.Series(dtype="float64")
-
-        for col in cols:
-            if col not in recent.columns:
-                continue
-            y = pd.to_numeric(recent[col], errors="coerce")
-            if not y.dropna().empty:
-                y_all = pd.concat([y_all, y.dropna()], ignore_index=True)
-
-            # draw recommended band
-            lo, hi = TARGET_RANGES.get(col, (None, None))
-            if col in TARGET_RANGES:
-                ax.axhspan(lo, hi, color="green", alpha=0.1)
-
-            # highlight out‐of‐closure and draw caution/closure bands
-            if col in CLOSURE_LIMITS:
-                c_lo, c_hi = CLOSURE_LIMITS[col]
-                mask = (y < c_lo) | (y > c_hi)
-                if mask.any():
-                    dates = recent.loc[mask, "run_timestamp"]
-                    ax.scatter(dates, y[mask], color="red", edgecolor="black", zorder=5)
-            
-                # Always draw caution and closure bands
-                if lo is not None and c_lo < lo:
-                    ax.axhspan(c_lo, lo, color="yellow", alpha=0.1)
-                if hi is not None and c_hi > hi:
-                    ax.axhspan(hi, c_hi, color="yellow", alpha=0.1)
-                y_max = y.max()
-                if pd.notna(y_max):
-                    ax.axhspan(0, c_lo, color="red", alpha=0.05)
-                    ax.axhspan(c_hi, y_max, color="red", alpha=0.05)
-
-            ax.plot(
-                recent["run_timestamp"], y,
-                marker="o", label=format_label(col)
-            )
-
-        # tighten Y axis
-        y_clean = y_all.dropna()
-        if not y_clean.empty:
-            mn, mx = y_clean.min(), y_clean.max()
-            if all(map(lambda v: isinstance(v, (int, float)) and not (v != v or v in (float("inf"), float("-inf"))), [mn, mx])):
-                buf = (mx - mn) * 0.1 if mx > mn else 1
-                ax.set_ylim(mn - buf, mx + buf)
-
-        ax.set_xlabel("Date")
-        
-        ax.set_ylabel(format_label(name))
-        fig.autofmt_xdate(rotation=30)
-        # legend only for chlorine data series
-        if name == "chlorine":
-            h, l = ax.get_legend_handles_labels()
-            allowed = {format_label("free_chlorine"), format_label("total_chlorine")}
-            data_pairs = [
-                (hndl, lbl)
-                for hndl, lbl in zip(h, l)
-                if lbl in allowed
-            ]
-            if data_pairs:
-                handles, labels = zip(*data_pairs)
-                ax.legend(handles, labels)
-
-
-        ax.grid(alpha=0.3)
-        fig.tight_layout()
-
-        out_path = os.path.join(DOCS_DIR, f"{name}.png")
-        fig.savefig(out_path)
-        plt.close(fig)
-        print(f"  • Saved plot: {out_path}")
-
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -312,7 +192,7 @@ def main():
         return
 
     data = api.fetch_water_test_data()
-    
+
     # Normalize "N/A" to 0
     for key, val in data.items():
         if isinstance(val, str) and val.strip().upper() == "N/A":
@@ -320,7 +200,7 @@ def main():
 
     central_time = datetime.now(ZoneInfo("America/Chicago"))
     human_time = central_time.strftime("%B %d, %Y at %#I:%M %p")
-    run_timestamp = central_time.strftime("%Y-%m-%d %H:%M:%S")  
+    run_timestamp = central_time.strftime("%Y-%m-%d %H:%M:%S")
     data["run_timestamp"] = run_timestamp
 
     last_logged = load_last_logged_test()
@@ -333,11 +213,11 @@ def main():
     missing = [k for k in required_keys if k not in data or not data[k]]
 
     if missing:
-        print("❌ Leslie’s API returned incomplete data, skipping this run.")
+        print("❌ Leslie's API returned incomplete data, skipping this run.")
         print("Missing:", missing)
         print("Raw data:", data)
         return
-    
+
     if is_duplicate_test(data, last_logged):
         print(f"ℹ️ Already logged {data['test_date']}")
     else:
@@ -345,12 +225,12 @@ def main():
         append_to_csv(data)
         summary = build_test_summary(data)
 
-        if QUIET==0:
+        if QUIET == 0:
             post_slack_message(
                 SLACK_CHANNEL,
                 f"New water test logged during run at {human_time}:\n{summary}"
             )
-    
+
             if "🚨" in summary:
                 post_slack_message(
                     SLACK_CHANNEL,
@@ -359,52 +239,7 @@ def main():
         else:
             print("Quiet mode enabled, should have pinged slack here")
 
-        print("📊 Generating 30-day plots…")
-        plot_last_30_days(CSV_FILE)
-
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
