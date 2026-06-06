@@ -61,6 +61,9 @@ li { margin: 4px 0; line-height: 1.5; }
 .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #1a6b6c; margin-top: 3px; }
 .updated { color: #888; font-size: 12px; margin-top: 20px; }
+.status.off  { background: #e9ecef; color: #495057; }
+.notice { background: #e9ecef; border-left: 3px solid #aaa; padding: 8px 14px;
+          margin: 0 0 16px; border-radius: 3px; font-size: 13px; color: #495057; }
 """
 
 JS = """
@@ -203,10 +206,14 @@ def _water_tab(all_flume, today):
 """
 
 
-def _chemicals_tab():
-    return """
+def _chemicals_tab(current_season=None):
+    off_banner = "" if current_season else (
+        '<div class="notice">Pool is closed for the season — chemical testing will resume when the pool opens. '
+        'Plots below reflect last season\'s data.</div>'
+    )
+    return f"""
 <h3>Chemical History</h3>
-<p class="note">Green band = Leslie's recommended range. Yellow = caution. Red = state closure limit.</p>
+{off_banner}<p class="note">Green band = Leslie's recommended range. Yellow = caution. Red = state closure limit.</p>
 <p class="note">Leslie's tests are not state-certified and are run off-hours.
    Out-of-limit readings may not reflect real pool conditions.</p>
 <img src="ph.png"           alt="pH">
@@ -220,24 +227,42 @@ def _chemicals_tab():
 """
 
 
-def _pumphouse_tab(now_ct):
+def _pumphouse_tab(now_ct, current_season=None):
     all_flow = _load_flow()
 
     if not all_flow:
+        if not current_season:
+            return (
+                '<div class="status off">RPi offline — pool closed for the season</div>'
+                '<p class="note">Water flow is still monitored via Flume for leak detection.</p>'
+                "<p>No flow data on file from the previous season.</p>"
+            )
         return "<p>No flow data available.</p>"
 
     last = all_flow[-1]
     age_h = (now_ct.replace(tzinfo=None) - last["dt"]).total_seconds() / 3600
 
-    if age_h < 2:
-        age_str = f"{int(age_h * 60)} min ago"
-        status_cls = "ok"
-    elif age_h < 24:
-        age_str = f"{age_h:.1f} h ago"
-        status_cls = "warn"
+    if not current_season:
+        age_days = age_h / 24
+        age_str = f"{age_days:.0f} day{'s' if age_days >= 2 else ''} ago"
+        status_html = (
+            f'<div class="status off">RPi offline — last active {age_str}</div>\n'
+            '<div class="notice">Pool is closed for the season. The RPi is not operational until '
+            'the pool opens. Water flow is still monitored via Flume for leak detection — '
+            'if you receive a flow alert, check the Flume app. '
+            'Flow data and plots below are from the previous season.</div>'
+        )
     else:
-        age_str = f"{age_h:.0f} h ago"
-        status_cls = "err"
+        if age_h < 2:
+            age_str = f"{int(age_h * 60)} min ago"
+            status_cls = "ok"
+        elif age_h < 24:
+            age_str = f"{age_h:.1f} h ago"
+            status_cls = "warn"
+        else:
+            age_str = f"{age_h:.0f} h ago"
+            status_cls = "err"
+        status_html = f'<div class="status {status_cls}">RPi last seen: {age_str}</div>'
 
     # 24-h average flow
     cutoff_24h = now_ct.replace(tzinfo=None) - datetime.timedelta(hours=24)
@@ -262,7 +287,7 @@ def _pumphouse_tab(now_ct):
     )
 
     return f"""
-<div class="status {status_cls}">RPi last seen: {age_str}</div>
+{status_html}
 {stats_html}
 <h3>Flow – Last 7 Days</h3>
 <img src="flow_7d.png" alt="7-day flow rate">
@@ -378,6 +403,7 @@ def main():
     today = now_ct.date()
 
     all_flume = _load_flume(today)
+    current_season = get_current_season(today)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -397,8 +423,8 @@ def main():
   <button class="tab-btn" id="btn-raw"       onclick="showTab('raw')">Raw Data</button>
 </div>
 <div id="water"     class="tab-pane">{_water_tab(all_flume, today)}</div>
-<div id="chemicals" class="tab-pane">{_chemicals_tab()}</div>
-<div id="pumphouse" class="tab-pane">{_pumphouse_tab(now_ct)}</div>
+<div id="chemicals" class="tab-pane">{_chemicals_tab(current_season)}</div>
+<div id="pumphouse" class="tab-pane">{_pumphouse_tab(now_ct, current_season)}</div>
 <div id="raw"       class="tab-pane">{_raw_tab(today)}</div>
 </body>
 </html>"""
