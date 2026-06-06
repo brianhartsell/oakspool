@@ -177,6 +177,18 @@ def main():
     _append(data)
     print(f"✅ Logged new test: {data['test_date']}")
 
+    # Only notify Slack for fresh tests. The Boomi API returns full history, so
+    # the first run of a new season would otherwise notify for last season's data.
+    days_since = data.get("days_since_test")
+    try:
+        is_fresh = int(days_since) <= 3
+    except (TypeError, ValueError):
+        is_fresh = True  # unknown — notify anyway
+
+    if not is_fresh:
+        print(f"ℹ️ Test is {days_since} days old — skipping Slack notification.")
+        return
+
     summary = _build_summary(data)
     hour = now.strftime("%I").lstrip("0") or "12"
     human_time = now.strftime(f"%B %d, %Y at {hour}:%M %p")
