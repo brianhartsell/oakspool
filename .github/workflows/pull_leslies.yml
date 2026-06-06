@@ -27,7 +27,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 python-dotenv
+        run: pip install requests python-dotenv
 
       - name: Pull Leslie's data
         run: python pull_leslies.py

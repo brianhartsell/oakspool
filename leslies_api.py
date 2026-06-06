@@ -1,171 +1,363 @@
-"""API client for Leslie's Pool water tests."""
+"""API client for Leslie's Pool Water Tests.
 
-import json
+Adapted from https://github.com/connorgallopo/leslies-pool (MIT licence).
+Constants inlined from const.py; Home Assistant framework removed.
+"""
+
+from __future__ import annotations
+
+import base64
 import logging
-import requests
-from bs4 import BeautifulSoup, Tag
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-_LOG = logging.getLogger(__name__)
+import requests
+
+_LOGGER = logging.getLogger("leslies_api")
+
+# ---------------------------------------------------------------------------
+# API constants (from Leslie's official mobile app, com.lesliespool.mobile v10.8)
+# ---------------------------------------------------------------------------
+
+BOOMI_BASE_URL   = "https://api.lesl.cloud"
+BOOMI_BASIC_USER = "MobileApp@lesliespoolmart-N83JU5"
+BOOMI_BASIC_PASS = "7cfa5832-d2ba-4997-adb7-2e2d81ccef96"
+
+OCAPI_BASE_URL   = "https://lesliespool.com/s/lpm_site/dw/shop/v23_2"
+OCAPI_CLIENT_ID  = "a233c1f2-f115-434d-959e-efc789d0cd45"
+
+USER_AGENT = "LesliesPoolCare/10.8 CFNetwork/1410.0.3 Darwin/22.6.0"
+
+# (api_type, sensor_key, display_name, unit)
+CHEMISTRY_TESTS: list[tuple[str, str, str, str | None]] = [
+    ("Free Chlorine",  "free_chlorine",  "Free Chlorine",    "ppm"),
+    ("Total Chlorine", "total_chlorine", "Total Chlorine",   "ppm"),
+    ("pH",             "ph",             "pH",               "pH"),
+    ("Alkalinity",     "alkalinity",     "Total Alkalinity", "ppm"),
+    ("Calcium",        "calcium",        "Calcium Hardness", "ppm"),
+    ("Cyanuric Acid",  "cyanuric_acid",  "Cyanuric Acid",    "ppm"),
+    ("Iron",           "iron",           "Iron",             "ppm"),
+    ("Copper",         "copper",         "Copper",           "ppm"),
+    ("Phosphates",     "phosphates",     "Phosphates",       "ppb"),
+    ("Salt",           "salt",           "Salt",             "ppm"),
+    ("TDS",            "tds",            "TDS",              "ppm"),
+    ("Bromine",        "bromine",        "Bromine",          "ppm"),
+    ("Biguanides",     "biguanides",     "Biguanides",       "ppm"),
+]
+
+# ---------------------------------------------------------------------------
+# Exceptions
+# ---------------------------------------------------------------------------
+
+
+class LesliesPoolError(Exception):
+    """Base error from the Leslie's API client."""
+
+
+class InvalidAuthError(LesliesPoolError):
+    """Email or password rejected by Leslie's."""
+
+
+class PoolNotFoundError(LesliesPoolError):
+    """Account has no pools, or the configured pool is gone."""
+
+
+# ---------------------------------------------------------------------------
+# Public data class
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PoolProfile:
+    """A pool returned by the Boomi poolProfiles endpoint."""
+
+    id: str
+    pool_name: str
+    sanitization_code: str | None = None
+    size_in_gallons: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Main API client
+# ---------------------------------------------------------------------------
 
 
 class LesliesPoolApi:
-    LOGIN_PAGE_URL = "https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/Account-Show"
-    LOGIN_URL = "https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/Account-Login"
-    WATER_TEST_URL = "https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/WaterTest-GetWaterTest"
+    """Client for the Leslie's Pool Boomi mobile API."""
 
-    BROWSER_HEADERS = {
-        "user-agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "accept-language": "en-US,en;q=0.5",
-        "accept-encoding": "gzip, deflate, br",
-        "connection": "keep-alive",
-        "upgrade-insecure-requests": "1",
-    }
+    def __init__(
+        self,
+        relate_customer_id: str,
+        email: str,
+        pool_profile_id: str,
+        pool_name: str,
+    ) -> None:
+        self._relate_customer_id = relate_customer_id
+        self._email = email
+        self._pool_profile_id = pool_profile_id
+        self._pool_name = pool_name
 
-    def __init__(self, username, password, pool_profile_id, pool_name):
-        self.username = username
-        self.password = password
-        self.pool_profile_id = pool_profile_id
-        self.pool_name = pool_name
-        self.session = requests.Session()
+        self._session = requests.Session()
+        self._sanitizer_lookup: dict[str, str] | None = None
+        self._last_successful_values: dict[str, Any] = {}
 
-    def authenticate(self):
-        resp = self.session.get(self.LOGIN_PAGE_URL, headers=self.BROWSER_HEADERS)
-        if resp.status_code != 200:
-            _LOG.error("Login page HTTP %s", resp.status_code)
-            return False
-
-        soup = BeautifulSoup(resp.text, "html.parser")
-        csrf_tag = soup.find("input", {"name": "csrf_token"})
-        if not isinstance(csrf_tag, Tag) or not csrf_tag.has_attr("value"):
-            _LOG.error("CSRF token not found (HTTP %s). Snippet: %s", resp.status_code, resp.text[:300])
-            return False
-
-        login_resp = self.session.post(
-            self.LOGIN_URL,
-            headers={
-                **self.BROWSER_HEADERS,
-                "accept": "application/json, text/javascript, */*; q=0.01",
-                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "referer": self.LOGIN_PAGE_URL,
-                "origin": "https://lesliespool.com",
-            },
-            data={
-                "loginEmail": self.username,
-                "loginPassword": self.password,
-                "csrf_token": csrf_tag["value"],
-            },
-        )
-        if login_resp.status_code != 200:
-            _LOG.error("Login POST HTTP %s", login_resp.status_code)
-            return False
-        return True
-
-    def fetch_water_test_data(self):
-        data = {}
-        for attempt in range(1, 3):
-            try:
-                if attempt > 1 and not self.authenticate():
-                    return {}
-
-                landing = self.session.get(
-                    f"https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/WaterTest-Landing"
-                    f"?poolProfileId={self.pool_profile_id}&poolName={self.pool_name}",
-                    headers=self.BROWSER_HEADERS,
-                )
-                if "Account-Show" in landing.url or "login?rurl=1" in landing.url:
-                    if attempt < 2:
-                        continue
-                    return {}
-
-                cookies = "; ".join(f"{k}={v}" for k, v in self.session.cookies.get_dict().items())
-                resp = self.session.post(
-                    self.WATER_TEST_URL,
-                    headers={
-                        **self.BROWSER_HEADERS,
-                        "accept": "application/json, text/javascript, */*; q=0.01",
-                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "referer": (
-                            f"https://lesliespool.com/on/demandware.store/Sites-lpm_site-Site/en_US/"
-                            f"WaterTest-Landing?poolProfileId={self.pool_profile_id}&poolName={self.pool_name}"
-                        ),
-                        "origin": "https://lesliespool.com",
-                        "cookie": cookies,
-                    },
-                    data="poolProfileName=Pool&poolSanitizer=Salt+3000-4000",
-                )
-
-                if resp.status_code != 200:
-                    if attempt < 2:
-                        continue
-                    return {}
-
-                try:
-                    data = resp.json()
-                except json.JSONDecodeError:
-                    if "<html" in resp.text[:100].lower() and attempt < 2:
-                        if self.authenticate():
-                            continue
-                    return {}
-
-                if "errorMsg" in data and "login" in str(data.get("errorMsg")).lower() and attempt < 2:
-                    if self.authenticate():
-                        continue
-                break
-
-            except requests.RequestException as exc:
-                _LOG.error("Request failed: %s", exc)
-                if attempt < 2:
-                    continue
-                return {}
-
-        if "response" not in data:
-            return {}
-
-        soup = BeautifulSoup(data["response"], "html.parser")
-        table = soup.find("table", {"class": "table table-striped table-bordered table-hover table-sm"})
-        if not isinstance(table, Tag):
-            return {}
-
-        tbody = table.find("tbody")
-        if not isinstance(tbody, Tag):
-            return {}
-
-        first_row = tbody.find("tr")
-        if not isinstance(first_row, Tag):
-            return {}
-
-        columns = first_row.find_all("td")
-        if len(columns) <= 10:
-            return {}
-
-        test_date = None
-        date_tag = first_row.find("th", {"class": "text-center align-middle p-1"})
-        if date_tag:
-            badge = date_tag.find("span", {"class": "badge badge-secondary p-2"})
-            if badge:
-                test_date = badge.text.strip()
-
-        in_store_tag = first_row.find_all("td")[-1]
-        in_store = not bool(
-            in_store_tag and in_store_tag.find("i", {"class": "fa fa-times-circle text-danger"})
-        )
-
+    def _boomi_headers(self) -> dict[str, str]:
+        auth = base64.b64encode(f"{BOOMI_BASIC_USER}:{BOOMI_BASIC_PASS}".encode()).decode()
         return {
-            "free_chlorine": columns[1].text.strip(),
-            "total_chlorine": columns[2].text.strip(),
-            "ph": columns[3].text.strip(),
-            "alkalinity": columns[4].text.strip(),
-            "calcium": columns[5].text.strip(),
-            "cyanuric_acid": columns[6].text.strip(),
-            "iron": columns[7].text.strip(),
-            "copper": columns[8].text.strip(),
-            "phosphates": columns[9].text.strip(),
-            "salt": columns[10].text.strip(),
-            "test_date": test_date,
-            "in_store": in_store,
+            "Authorization": f"Basic {auth}",
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "source": "APP",
+            "DDP_email": self._email,
+            "DDP_ID": self._relate_customer_id,
         }
+
+    @staticmethod
+    def resolve_relate_customer_id(email: str, password: str) -> tuple[str, str]:
+        """Return (customer_id, relateCustomerID) for the given credentials.
+
+        Uses the OCAPI Session Bridge. Raises InvalidAuthError on bad creds.
+        """
+        creds = base64.b64encode(f"{email}:{password}".encode()).decode()
+        url = f"{OCAPI_BASE_URL}/customers/auth?client_id={OCAPI_CLIENT_ID}"
+        r = requests.post(
+            url,
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/json",
+                "User-Agent": USER_AGENT,
+            },
+            json={"type": "credentials"},
+            timeout=20,
+        )
+        if r.status_code == 401:
+            raise InvalidAuthError("Leslie's rejected the email/password")
+        r.raise_for_status()
+
+        jwt = r.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        payload = r.json()
+        customer_id = payload.get("customer_id")
+        if not jwt or not customer_id:
+            raise LesliesPoolError("OCAPI auth response missing JWT or customer_id")
+
+        r = requests.get(
+            f"{OCAPI_BASE_URL}/customers/{customer_id}?client_id={OCAPI_CLIENT_ID}",
+            headers={
+                "Authorization": f"Bearer {jwt}",
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+            },
+            timeout=20,
+        )
+        r.raise_for_status()
+        relate_id = r.json().get("c_relateCustomerID")
+        if not relate_id:
+            raise LesliesPoolError("Customer record missing c_relateCustomerID")
+        return customer_id, str(relate_id)
+
+    @staticmethod
+    def discover_pool_profiles(email: str, relate_customer_id: str) -> list[PoolProfile]:
+        """Return the user's registered pools."""
+        auth = base64.b64encode(f"{BOOMI_BASIC_USER}:{BOOMI_BASIC_PASS}".encode()).decode()
+        r = requests.get(
+            f"{BOOMI_BASE_URL}/ws/rest/Mobile/RelateORCE/poolProfiles/v1",
+            headers={
+                "Authorization": f"Basic {auth}",
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+                "source": "APP",
+                "DDP_email": email,
+                "DDP_ID": relate_customer_id,
+            },
+            timeout=20,
+        )
+        r.raise_for_status()
+        raw = r.json().get("pool_profiles", [])
+        if not raw:
+            raise PoolNotFoundError("Account has no pool profiles")
+        return [
+            PoolProfile(
+                id=str(p["id"]),
+                pool_name=p.get("pool_name") or f"Pool {p['id']}",
+                sanitization_code=str(p.get("sanitization", "")) or None,
+                size_in_gallons=str(p.get("size_in_gallons", "")) or None,
+            )
+            for p in raw
+        ]
+
+    def _get_sanitizer_lookup(self) -> dict[str, str]:
+        if self._sanitizer_lookup is None:
+            r = self._session.get(
+                f"{BOOMI_BASE_URL}/ws/rest/Mobile/poolSanitizers/v1",
+                headers=self._boomi_headers(),
+                timeout=20,
+            )
+            r.raise_for_status()
+            self._sanitizer_lookup = {
+                str(s["brand_id"]): s.get("brand_name", "")
+                for s in r.json().get("pool_sanitizers", [])
+            }
+        return self._sanitizer_lookup
+
+    def fetch_water_test_data(self) -> dict[str, Any]:
+        """Return the latest reading for every chemistry sensor."""
+        try:
+            home = self._fetch_home_dashboard()
+            history = self._fetch_water_test_history()
+            days_since = self._fetch_days_since_last_test()
+
+            values: dict[str, Any] = {}
+
+            latest_ts: str | None = None
+            latest_results_id: str | None = None
+            latest_is_store: bool | None = None
+            for api_type, sensor_key, _name, _unit in CHEMISTRY_TESTS:
+                latest = history.latest_for(api_type)
+                values[sensor_key] = latest.value if latest else None
+                if latest and (latest_ts is None or latest.timestamp > latest_ts):
+                    latest_ts = latest.timestamp
+                    latest_results_id = latest.results_id
+                    latest_is_store = latest.is_store_test
+
+            if latest_ts:
+                values["test_date"] = _to_display_date(latest_ts)
+                values["test_timestamp"] = _to_datetime(latest_ts)
+                values["in_store"] = bool(latest_is_store)
+                values["test_source"] = "In-Store" if latest_is_store else "AccuBlue Home"
+                values["results_id"] = latest_results_id
+            else:
+                values["test_date"] = None
+                values["test_timestamp"] = None
+                values["in_store"] = None
+                values["test_source"] = None
+                values["results_id"] = None
+
+            values["days_since_test"] = days_since
+            values["sanitizer"] = home.sanitizer_name(self._get_sanitizer_lookup())
+            values["pool_size"] = home.pool_size_gallons
+            values["pool_name_sensor"] = home.pool_name
+
+            self._last_successful_values = values
+            return values
+        except (requests.RequestException, LesliesPoolError, ValueError) as err:
+            _LOGGER.error("Leslie's API fetch failed: %s", err)
+            if self._last_successful_values:
+                _LOGGER.info("Returning cached values from last successful fetch")
+                return self._last_successful_values
+            raise
+
+    def _fetch_home_dashboard(self) -> _HomeData:
+        r = self._session.get(
+            f"{BOOMI_BASE_URL}/ws/rest/Mobile/RelateORCE/home/v4",
+            headers=self._boomi_headers(),
+            timeout=20,
+        )
+        r.raise_for_status()
+        profiles = r.json().get("pool_profile") or []
+        match = next((p for p in profiles if str(p.get("id")) == self._pool_profile_id), None)
+        if match is None and profiles:
+            match = profiles[0]
+        if match is None:
+            raise PoolNotFoundError("home/v4 returned no pool profiles")
+        return _HomeData(match)
+
+    def _fetch_water_test_history(self) -> _History:
+        end = (datetime.now(timezone.utc) + timedelta(days=365)).strftime("%Y%m%d 235959.999")
+        start = "20200101 000000.000"
+        r = self._session.get(
+            f"{BOOMI_BASE_URL}/ws/rest/Mobile/waterTesting/history/v2",
+            headers=self._boomi_headers(),
+            params={
+                "pool_profile_id": self._pool_profile_id,
+                "start_date": start,
+                "end_date": end,
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        return _History(r.json().get("water_test_history", {}).get("water_tests") or [])
+
+    def _fetch_days_since_last_test(self) -> int | None:
+        try:
+            r = self._session.get(
+                f"{BOOMI_BASE_URL}/ws/rest/Mobile/waterTesting/DaysSinceWaterTest",
+                headers=self._boomi_headers(),
+                params={"pool_profile_id": self._pool_profile_id},
+                timeout=15,
+            )
+            r.raise_for_status()
+            return int(r.json().get("no_of_days_since_last_watertest"))
+        except (requests.RequestException, ValueError, TypeError):
+            return None
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class _Reading:
+    value: Any
+    timestamp: str
+    is_store_test: bool
+    results_id: str | None
+
+
+class _History:
+    def __init__(self, raw_tests: list[dict[str, Any]]) -> None:
+        self._by_type: dict[str, list[_Reading]] = {}
+        for t in raw_tests:
+            readings = [
+                _Reading(
+                    value=v.get("value"),
+                    timestamp=v.get("timestamp") or "",
+                    is_store_test=bool(v.get("is_store_test")),
+                    results_id=v.get("results_id"),
+                )
+                for v in (t.get("water_test_values") or [])
+                if v.get("value") is not None and v.get("timestamp")
+            ]
+            self._by_type[t.get("water_test_type", "")] = readings
+
+    def latest_for(self, api_type: str) -> _Reading | None:
+        readings = self._by_type.get(api_type) or []
+        if not readings:
+            return None
+        return max(readings, key=lambda r: r.timestamp)
+
+
+class _HomeData:
+    def __init__(self, raw: dict[str, Any]) -> None:
+        self._raw = raw
+
+    @property
+    def pool_name(self) -> str | None:
+        return self._raw.get("pool_name")
+
+    @property
+    def pool_size_gallons(self) -> int | None:
+        size = self._raw.get("size_in_gallons")
+        try:
+            return int(size) if size is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    def sanitizer_name(self, lookup: dict[str, str]) -> str | None:
+        code = self._raw.get("sanitization")
+        if code is None:
+            return None
+        return lookup.get(str(code))
+
+
+def _to_datetime(boomi_ts: str) -> datetime | None:
+    try:
+        return datetime.strptime(boomi_ts, "%Y%m%d %H%M%S.%f").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _to_display_date(boomi_ts: str) -> str | None:
+    dt = _to_datetime(boomi_ts)
+    return dt.strftime("%m/%d/%Y") if dt else None

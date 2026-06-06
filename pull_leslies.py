@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from leslies_api import LesliesPoolApi
+from leslies_api import InvalidAuthError, LesliesPoolApi, PoolNotFoundError
 
 LOG_DIR = "logs"
 CSV_FILE = os.path.join(LOG_DIR, "leslies-log.csv")
@@ -127,18 +127,36 @@ def _post_slack(channel, text):
 
 
 def main():
-    api = LesliesPoolApi(
-        username=USERNAME, password=PASSWORD,
-        pool_profile_id=POOLID, pool_name=POOLNAME,
-    )
-    if not api.authenticate():
+    try:
+        _, relate_id = LesliesPoolApi.resolve_relate_customer_id(USERNAME, PASSWORD)
+    except InvalidAuthError:
         print("⚠️ Leslie's login failed.")
         raise SystemExit(1)
 
+    try:
+        pools = LesliesPoolApi.discover_pool_profiles(USERNAME, relate_id)
+    except PoolNotFoundError as e:
+        print(f"⚠️ {e}")
+        raise SystemExit(1)
+
+    pool = next((p for p in pools if p.id == POOLID), pools[0])
+    print(f"ℹ️ Using pool profile: {pool.pool_name} (id={pool.id})")
+
+    api = LesliesPoolApi(
+        relate_customer_id=relate_id,
+        email=USERNAME,
+        pool_profile_id=pool.id,
+        pool_name=pool.pool_name,
+    )
     data = api.fetch_water_test_data()
 
-    for k, v in data.items():
-        if isinstance(v, str) and v.strip().upper() == "N/A":
+    # Normalize: None → "", bool → string, legacy "N/A" → ""
+    for k, v in list(data.items()):
+        if v is None:
+            data[k] = ""
+        elif isinstance(v, bool):
+            data[k] = str(v)
+        elif isinstance(v, str) and v.strip().upper() == "N/A":
             data[k] = ""
 
     required = ["test_date", "free_chlorine", "total_chlorine", "ph"]
