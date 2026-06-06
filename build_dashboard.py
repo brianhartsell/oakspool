@@ -414,13 +414,10 @@ def main():
         f.write(html)
     print(f"✅ Dashboard written to {out}")
 
-    print("Sending Slack notification...")
-    msg = "Dashboard updated: https://brianhartsell.github.io/oakspool/"
-    if today.weekday() == 6:  # Sunday — broadcast
+    if today.weekday() == 6:  # Sunday only — post to both channels
+        msg = "Dashboard updated: https://brianhartsell.github.io/oakspool/"
         for ch in [SLACK_CHANNEL, SLACK_BOARD_CH]:
             _post_slack(ch, msg)
-    else:
-        _post_slack(HEARTBEAT_CHANNEL, msg)
 
 
 if __name__ == "__main__":
