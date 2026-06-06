@@ -188,16 +188,20 @@ class LesliesPoolApi:
 
     def _get_sanitizer_lookup(self) -> dict[str, str]:
         if self._sanitizer_lookup is None:
-            r = self._session.get(
-                f"{BOOMI_BASE_URL}/ws/rest/Mobile/poolSanitizers/v1",
-                headers=self._boomi_headers(),
-                timeout=20,
-            )
-            r.raise_for_status()
-            self._sanitizer_lookup = {
-                str(s["brand_id"]): s.get("brand_name", "")
-                for s in r.json().get("pool_sanitizers", [])
-            }
+            try:
+                r = self._session.get(
+                    f"{BOOMI_BASE_URL}/ws/rest/Mobile/poolSanitizers/v1",
+                    headers=self._boomi_headers(),
+                    timeout=20,
+                )
+                r.raise_for_status()
+                self._sanitizer_lookup = {
+                    str(s["brand_id"]): s.get("brand_name", "")
+                    for s in r.json().get("pool_sanitizers", [])
+                }
+            except requests.RequestException as err:
+                _LOGGER.warning("poolSanitizers lookup failed (%s) — sanitizer will be unknown", err)
+                self._sanitizer_lookup = {}
         return self._sanitizer_lookup
 
     def fetch_water_test_data(self) -> dict[str, Any]:
