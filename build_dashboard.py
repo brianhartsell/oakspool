@@ -250,12 +250,6 @@ def _pumphouse_tab(now_ct):
     <div class="stat-val">{_fmt(last['flow'], '.1f')}</div></div>
   <div class="stat"><div class="stat-label">24h Avg Flow</div>
     <div class="stat-val">{_fmt(avg_flow, '.1f')}</div></div>
-  <div class="stat"><div class="stat-label">Vac Press (psi)</div>
-    <div class="stat-val">{_fmt(last['vac'], '.1f')}</div></div>
-  <div class="stat"><div class="stat-label">Sys Press (psi)</div>
-    <div class="stat-val">{_fmt(last['sys'], '.1f')}</div></div>
-  <div class="stat"><div class="stat-label">F1 Press (psi)</div>
-    <div class="stat-val">{_fmt(last['f1'], '.1f')}</div></div>
 </div>"""
 
     # Recent readings table (last N rows, newest first)
