@@ -285,87 +285,78 @@ def _pumphouse_tab(now_ct):
 """
 
 
-def _raw_tab(today):
-    cutoff = today - datetime.timedelta(days=14)
-    raw = {}
+def _raw_tab():
+    sections = []
 
-    if os.path.exists(FLOW_CSV):
-        with open(FLOW_CSV, newline="") as f:
-            for r in csv.DictReader(f):
-                try:
-                    dt = datetime.datetime.strptime(r["read_datetime"], "%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    continue
-                d = dt.date()
-                if d >= cutoff:
-                    if d not in raw or dt > raw[d].get("flow_dt", dt):
-                        raw.setdefault(d, {})["flow_dt"] = dt
-                        raw[d].update({
-                            "flow": r.get("flow", ""),
-                            "vac":  r.get("vac_press", ""),
-                            "sys":  r.get("sys_press", ""),
-                            "f1":   r.get("f1_press", ""),
-                        })
-
+    # --- Water usage (all rows, newest first) ---
+    flume_rows = []
     if os.path.exists(FLUME_CSV):
         with open(FLUME_CSV, newline="") as f:
             for r in csv.DictReader(f):
-                d = datetime.datetime.strptime(r["date"], "%Y-%m-%d").date()
-                if d >= cutoff:
-                    raw.setdefault(d, {})["ccf"] = r.get("ccf", "")
+                ccf = float(r["ccf"])
+                rate = get_rate(r["date"])
+                flume_rows.append((r["date"], ccf, ccf * rate))
+    flume_rows.sort(reverse=True)
+    flume_html = "\n".join(
+        f"<tr><td>{d}</td><td>{ccf:.3f}</td><td>${cost:.2f}</td></tr>"
+        for d, ccf, cost in flume_rows
+    )
+    sections.append(f"""
+<h3>Water Usage — {len(flume_rows)} days</h3>
+<table>
+  <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
+  <tbody>{flume_html}</tbody>
+</table>""")
 
+    # --- Leslie's tests (all rows, newest first) ---
+    CHEM_COLS = [
+        "free_chlorine", "total_chlorine", "ph", "alkalinity", "calcium",
+        "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store",
+    ]
+    les_rows = []
     if os.path.exists(LESLIES_CSV):
         with open(LESLIES_CSV, newline="") as f:
-            for r in csv.DictReader(f):
-                try:
-                    d = datetime.datetime.strptime(r["test_date"], "%m/%d/%Y").date()
-                    run_dt = datetime.datetime.strptime(r["run_timestamp"], "%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    continue
-                if d >= cutoff:
-                    if d not in raw or run_dt > raw[d].get("les_dt", run_dt):
-                        raw.setdefault(d, {})["les_dt"] = run_dt
-                        raw[d].update({
-                            "free_cl": r.get("free_chlorine", ""),
-                            "total_cl": r.get("total_chlorine", ""),
-                            "ph": r.get("ph", ""),
-                            "alk": r.get("alkalinity", ""),
-                            "ca": r.get("calcium", ""),
-                            "cya": r.get("cyanuric_acid", ""),
-                            "fe": r.get("iron", ""),
-                            "cu": r.get("copper", ""),
-                            "phos": r.get("phosphates", ""),
-                        })
-
-    def cell(r, key):
-        v = r.get(key, "")
-        return f"<td>{v if v else '—'}</td>"
-
-    rows_html = ""
-    for d in sorted(raw, reverse=True):
-        r = raw[d]
-        ccf = r.get("ccf", "")
-        ccf_cell = f"<td>{float(ccf):.3f}</td>" if ccf else "<td>—</td>"
-        rows_html += (
-            f"<tr><td>{d}</td>{ccf_cell}"
-            f"{cell(r,'flow')}{cell(r,'vac')}{cell(r,'sys')}{cell(r,'f1')}"
-            f"{cell(r,'free_cl')}{cell(r,'total_cl')}{cell(r,'ph')}"
-            f"{cell(r,'alk')}{cell(r,'ca')}{cell(r,'cya')}"
-            f"{cell(r,'fe')}{cell(r,'cu')}{cell(r,'phos')}</tr>\n"
-        )
-
-    return f"""
-<h3>Raw Data – Last 14 Days</h3>
-<p class="note">One row per day, latest reading per source. Flow = most recent RPi reading that day.</p>
+            les_rows = list(csv.DictReader(f))
+    les_html = "\n".join(
+        "<tr>"
+        f"<td>{r.get('run_timestamp','')}</td><td>{r.get('test_date','')}</td>"
+        + "".join(f"<td>{r.get(c, '')}</td>" for c in CHEM_COLS)
+        + "</tr>"
+        for r in reversed(les_rows)
+    )
+    sections.append(f"""
+<h3>Water Chemistry (Leslie's) — {len(les_rows)} tests</h3>
+<div style="overflow-x:auto">
 <table>
   <thead>
-    <tr><th>Date</th><th>CCF</th><th>Flow</th><th>Vac</th><th>Sys</th><th>F1</th>
+    <tr><th>Run Timestamp</th><th>Test Date</th>
         <th>Free Cl</th><th>Total Cl</th><th>pH</th><th>Alk</th><th>Ca</th>
-        <th>CYA</th><th>Fe</th><th>Cu</th><th>Phos</th></tr>
+        <th>CYA</th><th>Fe</th><th>Cu</th><th>Phos</th><th>Salt</th><th>In-Store</th></tr>
   </thead>
-  <tbody>{rows_html}</tbody>
+  <tbody>{les_html}</tbody>
 </table>
-"""
+</div>""")
+
+    # --- Flow/pressure (last 7 days, newest first) ---
+    flow_cutoff = datetime.datetime.now() - datetime.timedelta(days=7)
+    flow_rows = _load_flow(cutoff_dt=flow_cutoff)
+    flow_html = "\n".join(
+        f"<tr><td>{r['dt'].strftime('%Y-%m-%d %H:%M:%S')}</td>"
+        f"{_td(r['flow'], '%.2f')}{_td(r['vac'], '%.1f')}"
+        f"{_td(r['sys'], '%.1f')}{_td(r['f1'], '%.1f')}</tr>"
+        for r in reversed(flow_rows)
+    )
+    sections.append(f"""
+<h3>Pump House / Flow — last 7 days ({len(flow_rows)} readings)</h3>
+<table>
+  <thead>
+    <tr><th>Timestamp (CT)</th><th>Flow (gpm)</th><th>Vac Press (psi)</th>
+        <th>Sys Press (psi)</th><th>F1 Press (psi)</th></tr>
+  </thead>
+  <tbody>{flow_html}</tbody>
+</table>""")
+
+    return "\n".join(sections)
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -398,7 +389,7 @@ def main():
 <div id="water"     class="tab-pane">{_water_tab(all_flume, today)}</div>
 <div id="chemicals" class="tab-pane">{_chemicals_tab()}</div>
 <div id="pumphouse" class="tab-pane">{_pumphouse_tab(now_ct)}</div>
-<div id="raw"       class="tab-pane">{_raw_tab(today)}</div>
+<div id="raw"       class="tab-pane">{_raw_tab()}</div>
 </body>
 </html>"""
 
