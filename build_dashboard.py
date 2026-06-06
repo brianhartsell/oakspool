@@ -29,7 +29,7 @@ CSS = """
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
        background: #f4f6f8; color: #333; }
 h1 { background: #1a6b6c; color: white; padding: 16px 24px; font-size: 1.5rem; }
-.tabs { background: #e8ecef; padding: 0 16px; display: flex; gap: 4px;
+.tabs { background: #e8ecef; padding: 0 16px; display: flex; flex-wrap: wrap; gap: 4px;
         border-bottom: 2px solid #1a6b6c; }
 .tab-btn { padding: 10px 22px; border: none; background: transparent; cursor: pointer;
            font-size: 14px; border-radius: 4px 4px 0 0; margin-top: 6px;
