@@ -79,3 +79,11 @@ jobs:
           git push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-type: application/json" \
+            -d "{\"channel\": \"$SLACK_CHANNEL\", \"text\": \"❌ *Nightly telemetry failed* — dashboard may be stale\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View failed run>\"}"

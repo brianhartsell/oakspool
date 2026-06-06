@@ -34,3 +34,11 @@ jobs:
       - name: Run Flume constant water check
         run: python flume_constant_water_check.py
 
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-type: application/json" \
+            -d "{\"channel\": \"$SLACK_CHANNEL\", \"text\": \"🚨 *Constant water check failed* — leak detection is offline\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View failed run>\"}"
+
