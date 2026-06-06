@@ -79,7 +79,12 @@ def _load_leslies():
             row = {"test_date": d}
             for key in TARGET_RANGES:
                 try:
-                    row[key] = float(r.get(key) or "nan")
+                    v = float(r.get(key) or "nan")
+                    # 0 is below every target range minimum — treat as missing data
+                    # (legacy N/A entries were normalized to 0 before this was fixed)
+                    if v == 0 and TARGET_RANGES[key][0] > 0:
+                        v = float("nan")
+                    row[key] = v
                 except ValueError:
                     row[key] = float("nan")
             rows.append(row)
@@ -88,18 +93,38 @@ def _load_leslies():
     return pd.DataFrame(rows).sort_values("test_date").reset_index(drop=True)
 
 
+def _ylim_for(key, col):
+    """Return (y_lo, y_hi) that includes both the data range and the reference bands."""
+    target = TARGET_RANGES.get(key)
+    closure = CLOSURE_LIMITS.get(key)
+    data_min = col.min() if not col.empty else 0
+    data_max = col.max() if not col.empty else 1
+    ref_lo = (closure or target or (data_min, data_max))[0]
+    ref_hi = (closure or target or (data_min, data_max))[1]
+    span = max(ref_hi - ref_lo, data_max - data_min, 1)
+    y_lo = max(0, min(data_min, ref_lo) - span * 0.1)
+    y_hi = max(data_max, ref_hi) + span * 0.1
+    return y_lo, y_hi
+
+
 def plot_chlorine(df, out_path):
     if df.empty:
         return
+    fc = df["free_chlorine"].dropna() if "free_chlorine" in df.columns else pd.Series([], dtype=float)
+    tc = df["total_chlorine"].dropna() if "total_chlorine" in df.columns else pd.Series([], dtype=float)
+    combined = pd.concat([fc, tc])
+    if combined.empty:
+        return
     fig, ax = plt.subplots(figsize=(10, 4))
     _chem_bands(ax, "free_chlorine")
-    if "free_chlorine" in df.columns:
+    if not fc.empty:
         ax.plot(df["test_date"], df["free_chlorine"],
                 marker="o", color="teal", linewidth=1.5, markersize=5, label="Free Chlorine")
-    if "total_chlorine" in df.columns:
+    if not tc.empty:
         ax.plot(df["test_date"], df["total_chlorine"],
                 marker="s", color="steelblue", linewidth=1.5, markersize=5,
                 linestyle="--", label="Total Chlorine")
+    ax.set_ylim(*_ylim_for("free_chlorine", combined))
     ax.set_xlabel("Test Date")
     ax.set_ylabel("Chlorine (ppm)")
     ax.set_title("Chlorine Levels")
@@ -118,9 +143,11 @@ def plot_chemical(df, key, out_path):
         return
     label, unit = LABELS_AND_UNITS.get(key, (key.replace("_", " ").title(), ""))
     ylabel = f"{label} ({unit})" if unit else label
+    col = df[key].dropna()
     fig, ax = plt.subplots(figsize=(10, 4))
     _chem_bands(ax, key)
     ax.plot(df["test_date"], df[key], marker="o", color="navy", linewidth=1.5, markersize=5)
+    ax.set_ylim(*_ylim_for(key, col))
     ax.set_xlabel("Test Date")
     ax.set_ylabel(ylabel)
     ax.set_title(label)

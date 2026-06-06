@@ -139,13 +139,13 @@ def main():
 
     for k, v in data.items():
         if isinstance(v, str) and v.strip().upper() == "N/A":
-            data[k] = 0
+            data[k] = ""
 
     required = ["test_date", "free_chlorine", "total_chlorine", "ph"]
     missing = [k for k in required if not data.get(k)]
     if missing:
-        print(f"❌ Leslie's returned incomplete data — missing: {missing}")
-        raise SystemExit(1)
+        print(f"ℹ️ No complete test data returned (missing: {missing}) — no test on file yet, skipping.")
+        return
 
     central = ZoneInfo("America/Chicago")
     now = datetime.now(central)

@@ -285,30 +285,40 @@ def _pumphouse_tab(now_ct):
 """
 
 
-def _raw_tab():
+def _raw_tab(today):
+    current = get_current_season(today)
+    if current:
+        season_start = current.open
+        season_label = f"{current.year} season ({season_start} – {current.close})"
+    else:
+        season_start = today - datetime.timedelta(days=90)
+        season_label = "last 90 days (no active season)"
+
     sections = []
 
-    # --- Water usage (all rows, newest first) ---
+    # --- Water usage (current season, newest first) ---
     flume_rows = []
     if os.path.exists(FLUME_CSV):
         with open(FLUME_CSV, newline="") as f:
             for r in csv.DictReader(f):
-                ccf = float(r["ccf"])
-                rate = get_rate(r["date"])
-                flume_rows.append((r["date"], ccf, ccf * rate))
+                d = datetime.datetime.strptime(r["date"], "%Y-%m-%d").date()
+                if d >= season_start:
+                    ccf = float(r["ccf"])
+                    rate = get_rate(r["date"])
+                    flume_rows.append((r["date"], ccf, ccf * rate))
     flume_rows.sort(reverse=True)
     flume_html = "\n".join(
         f"<tr><td>{d}</td><td>{ccf:.3f}</td><td>${cost:.2f}</td></tr>"
         for d, ccf, cost in flume_rows
     )
     sections.append(f"""
-<h3>Water Usage — {len(flume_rows)} days</h3>
+<h3>Water Usage — {season_label} ({len(flume_rows)} days)</h3>
 <table>
   <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
   <tbody>{flume_html}</tbody>
 </table>""")
 
-    # --- Leslie's tests (all rows, newest first) ---
+    # --- Leslie's tests (current season, newest first) ---
     CHEM_COLS = [
         "free_chlorine", "total_chlorine", "ph", "alkalinity", "calcium",
         "cyanuric_acid", "iron", "copper", "phosphates", "salt", "in_store",
@@ -316,7 +326,13 @@ def _raw_tab():
     les_rows = []
     if os.path.exists(LESLIES_CSV):
         with open(LESLIES_CSV, newline="") as f:
-            les_rows = list(csv.DictReader(f))
+            for r in csv.DictReader(f):
+                try:
+                    d = datetime.datetime.strptime(r["test_date"], "%m/%d/%Y").date()
+                except ValueError:
+                    continue
+                if d >= season_start:
+                    les_rows.append(r)
     les_html = "\n".join(
         "<tr>"
         f"<td>{r.get('run_timestamp','')}</td><td>{r.get('test_date','')}</td>"
@@ -325,7 +341,7 @@ def _raw_tab():
         for r in reversed(les_rows)
     )
     sections.append(f"""
-<h3>Water Chemistry (Leslie's) — {len(les_rows)} tests</h3>
+<h3>Water Chemistry (Leslie's) — {season_label} ({len(les_rows)} tests)</h3>
 <div style="overflow-x:auto">
 <table>
   <thead>
@@ -389,7 +405,7 @@ def main():
 <div id="water"     class="tab-pane">{_water_tab(all_flume, today)}</div>
 <div id="chemicals" class="tab-pane">{_chemicals_tab()}</div>
 <div id="pumphouse" class="tab-pane">{_pumphouse_tab(now_ct)}</div>
-<div id="raw"       class="tab-pane">{_raw_tab()}</div>
+<div id="raw"       class="tab-pane">{_raw_tab(today)}</div>
 </body>
 </html>"""
 
