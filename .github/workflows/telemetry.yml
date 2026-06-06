@@ -1,9 +1,11 @@
 name: Nightly Flume Usage Summary
 
 on:
-  schedule:
-    - cron: '0 4 * * *'  # 11 PM CDT = 04:00 UTC
-  workflow_dispatch:
+  # DISABLED — replaced by pull_flume.yml, pull_leslies.yml, update_plots.yml, build_dashboard.yml
+  # schedule:
+  #   - cron: '0 4 * * *'  # 11 PM CDT = 04:00 UTC
+  # workflow_dispatch:
+  workflow_call: {}  # placeholder; file kept for reference until old scripts are deleted
 
 permissions:
   contents: write

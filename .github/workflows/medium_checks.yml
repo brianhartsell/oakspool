@@ -1,9 +1,11 @@
 name: Medium Timeline Checks (Leslie's, Pumphouse)
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours
-  workflow_dispatch:
+  # DISABLED — replaced by pull_leslies.yml, update_plots.yml
+  # schedule:
+  #   - cron: '0 */2 * * *'  # Every 2 hours
+  # workflow_dispatch:
+  workflow_call: {}  # placeholder; file kept for reference until old scripts are deleted
 
 permissions:
   contents: write

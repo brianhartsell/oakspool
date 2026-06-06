@@ -1,9 +1,11 @@
 name: Short Timeline Checks (Flume Constant Water)
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # Every 30 minutes UTC
-  workflow_dispatch:
+  # DISABLED — replaced by check_flow.yml
+  # schedule:
+  #   - cron: '*/30 * * * *'  # Every 30 minutes UTC
+  # workflow_dispatch:
+  workflow_call: {}  # placeholder; file kept for reference until old scripts are deleted
 
 jobs:
   check-constant-water:
