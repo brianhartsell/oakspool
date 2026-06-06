@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '0 5 * * *'  # midnight CDT — 1 hour after Flume pull
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Update Plots"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -11,6 +14,7 @@ permissions:
 jobs:
   dashboard:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     env:
       SLACK_BOT_TOKEN:     ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL:       ${{ secrets.SLACK_CHANNEL }}
