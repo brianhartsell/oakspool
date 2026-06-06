@@ -34,7 +34,11 @@ def get_flume_connection() -> tuple[dict, str]:
     devices = requests.get(
         f"https://api.flumetech.com/users/{user_id}/devices", headers=headers
     ).json()
-    device_id = [d for d in devices["data"] if d["type"] == 2][0]["id"]
+    type2 = [d for d in devices["data"] if d["type"] == 2]
+    if not type2:
+        print("❌ No Flume water monitor device (type 2) found on this account")
+        raise SystemExit(1)
+    device_id = type2[0]["id"]
     query_url = f"https://api.flumetech.com/users/{user_id}/devices/{device_id}/query"
 
     return headers, query_url

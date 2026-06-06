@@ -67,7 +67,11 @@ chart_payload = {
     }]
 }
 chart_resp = requests.post(query_url, headers=headers, json=chart_payload)
-chart_data = chart_resp.json()["data"][0]["chart"]
+chart_resp_json = chart_resp.json()
+if chart_resp.status_code != 200 or not chart_resp_json.get("data"):
+    print(f"❌ Flume usage query failed ({chart_resp.status_code}): {chart_resp_json}")
+    raise SystemExit(1)
+chart_data = chart_resp_json["data"][0]["chart"]
 chart_dates = [e["datetime"][:10] for e in chart_data]
 chart_values = [round(e["value"] / CCF_CONVERSION, 4) for e in chart_data]
 

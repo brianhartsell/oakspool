@@ -2,6 +2,7 @@
 
 Must be run as a script (python pumphouse.py), not imported.
 """
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
@@ -16,6 +17,9 @@ DAYS_BACK = 30
 
 def main():
     # --- Load and preprocess ---
+    if not os.path.exists(INPUT_FILE):
+        print(f"⚠️ {INPUT_FILE} not found, skipping plots.")
+        return
     df = pd.read_csv(INPUT_FILE, parse_dates=[DATE_COLUMN])
     df = df.sort_values(by=DATE_COLUMN)
 
