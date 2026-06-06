@@ -50,7 +50,10 @@ def _get() -> list[Season]:
 
 def get_rate(date_str: str) -> float:
     """Given a YYYY-MM-DD string, return the seasonal rate for that year."""
-    return next(s.rate for s in _get() if s.year == int(date_str[:4]))
+    result = next((s.rate for s in _get() if s.year == int(date_str[:4])), None)
+    if result is None:
+        raise ValueError(f"No season configured for year {date_str[:4]}")
+    return result
 
 
 def get_rate_for_date(date_str: str) -> float:

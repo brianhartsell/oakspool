@@ -39,21 +39,22 @@ from seasons_loader import get_season_by_year, get_rate as _seasons_get_rate, ge
 
 # === Load full usage log
 all_rows = []
-with open(CSV_LOG, newline="") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        date_str = row["date"]
-        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-        ccf = float(row["ccf"])
-        rate = _seasons_get_rate(date_str)
-        cost = round(ccf * rate, 2)
-        all_rows.append({
-            "date": date_str,
-            "date_obj": date_obj,
-            "ccf": ccf,
-            "rate": rate,
-            "cost": cost
-        })
+if os.path.exists(CSV_LOG):
+    with open(CSV_LOG, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            date_str = row["date"]
+            date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            ccf = float(row["ccf"])
+            rate = _seasons_get_rate(date_str)
+            cost = round(ccf * rate, 2)
+            all_rows.append({
+                "date": date_str,
+                "date_obj": date_obj,
+                "ccf": ccf,
+                "rate": rate,
+                "cost": cost
+            })
 
 # === Slice for last 30 days only
 recent_rows = [r for r in all_rows if 0 <= (TODAY - r["date_obj"]).days < 30]
@@ -94,20 +95,21 @@ cutoff_date = TODAY - datetime.timedelta(days=14)
 raw_data = {}
 
 # --- Load flow.csv ---
-with open("logs/flow.csv", newline="") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        dt = datetime.datetime.strptime(row["read_datetime"], "%Y-%m-%d %H:%M:%S")
-        date = dt.date()
-        if date >= cutoff_date:
-            if date not in raw_data or dt > raw_data[date].get("flow_dt", dt):
-                raw_data.setdefault(date, {})["flow_dt"] = dt
-                raw_data[date].update({
-                    "flow": row.get("flow", ""),
-                    "vac": row.get("vac_press", ""),
-                    "sys": row.get("sys_press", ""),
-                    "f1": row.get("f1_press", "")
-                })
+if os.path.exists("logs/flow.csv"):
+    with open("logs/flow.csv", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            dt = datetime.datetime.strptime(row["read_datetime"], "%Y-%m-%d %H:%M:%S")
+            date = dt.date()
+            if date >= cutoff_date:
+                if date not in raw_data or dt > raw_data[date].get("flow_dt", dt):
+                    raw_data.setdefault(date, {})["flow_dt"] = dt
+                    raw_data[date].update({
+                        "flow": row.get("flow", ""),
+                        "vac": row.get("vac_press", ""),
+                        "sys": row.get("sys_press", ""),
+                        "f1": row.get("f1_press", "")
+                    })
 
 # --- Load flume_usage_log.csv ---
 with open("logs/flume_usage_log.csv", newline="") as f:
@@ -118,31 +120,32 @@ with open("logs/flume_usage_log.csv", newline="") as f:
             raw_data.setdefault(date, {})["ccf"] = row.get("ccf", "")
 
 # --- Load leslies-log.csv ---
-with open("logs/leslies-log.csv", newline="") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        test_date = datetime.datetime.strptime(row["test_date"], "%m/%d/%Y").date()
-        run_dt = datetime.datetime.strptime(row["run_timestamp"], "%Y-%m-%d %H:%M:%S")
-        if test_date >= cutoff_date:
-            if test_date not in raw_data or run_dt > raw_data[test_date].get("leslies_dt", run_dt):
-                raw_data.setdefault(test_date, {})["leslies_dt"] = run_dt
-                raw_data[test_date].update({
-                    "free_cl": row.get("free_chlorine", ""),
-                    "total_cl": row.get("total_chlorine", ""),
-                    "ph": row.get("ph", ""),
-                    "alk": row.get("alkalinity", ""),
-                    "ca": row.get("calcium", ""),
-                    "cya": row.get("cyanuric_acid", ""),
-                    "fe": row.get("iron", ""),
-                    "cu": row.get("copper", ""),
-                    "phos": row.get("phosphates", "")
-                })
+if os.path.exists("logs/leslies-log.csv"):
+    with open("logs/leslies-log.csv", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            test_date = datetime.datetime.strptime(row["test_date"], "%m/%d/%Y").date()
+            run_dt = datetime.datetime.strptime(row["run_timestamp"], "%Y-%m-%d %H:%M:%S")
+            if test_date >= cutoff_date:
+                if test_date not in raw_data or run_dt > raw_data[test_date].get("leslies_dt", run_dt):
+                    raw_data.setdefault(test_date, {})["leslies_dt"] = run_dt
+                    raw_data[test_date].update({
+                        "free_cl": row.get("free_chlorine", ""),
+                        "total_cl": row.get("total_chlorine", ""),
+                        "ph": row.get("ph", ""),
+                        "alk": row.get("alkalinity", ""),
+                        "ca": row.get("calcium", ""),
+                        "cya": row.get("cyanuric_acid", ""),
+                        "fe": row.get("iron", ""),
+                        "cu": row.get("copper", ""),
+                        "phos": row.get("phosphates", "")
+                    })
 
 # --- Format HTML rows ---
-raw_table_rows = ""
+raw_table_parts = []
 for date in sorted(raw_data.keys(), reverse=True):
     r = raw_data[date]
-    raw_table_rows += f"""
+    raw_table_parts.append(f"""
     <tr>
         <td>{date}</td>
         <td>{float(r.get('ccf', 0)):.2f}</td>
@@ -160,7 +163,8 @@ for date in sorted(raw_data.keys(), reverse=True):
         <td>{r.get('cu', '—')}</td>
         <td>{r.get('phos', '—')}</td>
     </tr>
-    """
+    """)
+raw_table_rows = "".join(raw_table_parts)
 
 raw_output_html = f"""
 <h3>Raw Output – Last 14 Days</h3>
