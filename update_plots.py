@@ -116,7 +116,7 @@ def plot_chlorine(df, out_path):
     if combined.empty:
         return
     fig, ax = plt.subplots(figsize=(10, 4))
-    _chem_bands(ax, "free_chlorine")
+    _chem_bands(ax, "total_chlorine")
     if not fc.empty:
         ax.plot(df["test_date"], df["free_chlorine"],
                 marker="o", color="teal", linewidth=1.5, markersize=5, label="Free Chlorine")
