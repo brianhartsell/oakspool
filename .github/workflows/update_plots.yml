@@ -1,0 +1,55 @@
+name: Update Plots
+
+on:
+  # Fires whenever new data lands — RPi pushes to flow.csv, actions push to the log CSVs
+  push:
+    branches: [main]
+    paths:
+      - 'logs/flow.csv'
+      - 'logs/flume_usage_log.csv'
+      - 'logs/leslies-log.csv'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  plots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install matplotlib pandas pytz python-dotenv
+
+      - name: Regenerate all plots
+        run: python update_plots.py
+
+      - name: Commit PNGs
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config user.name  github-actions
+          git config user.email github-actions@github.com
+          git add docs/*.png
+          if git diff --cached --quiet; then
+            echo "Plots unchanged."
+            exit 0
+          fi
+          git commit -m "Update plots $(date '+%Y-%m-%d %H:%M %Z')"
+          git fetch origin "${GITHUB_REF_NAME}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-type: application/json" \
+            -d "{\"channel\":\"${{ secrets.SLACK_CHANNEL }}\",\"text\":\"❌ *Plot update failed*\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"

@@ -1,0 +1,57 @@
+name: Pull Leslie's Water Test Data
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # every 2 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    env:
+      LESLIES_USERNAME: ${{ secrets.LESLIES_USERNAME }}
+      LESLIES_PASSWORD: ${{ secrets.LESLIES_PASSWORD }}
+      LESLIES_POOLID:   ${{ secrets.LESLIES_POOLID }}
+      LESLIES_POOLNAME: ${{ secrets.LESLIES_POOLNAME }}
+      SLACK_BOT_TOKEN:  ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL:    ${{ secrets.SLACK_CHANNEL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 python-dotenv
+
+      - name: Pull Leslie's data
+        run: python pull_leslies.py
+
+      - name: Commit log
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config user.name  github-actions
+          git config user.email github-actions@github.com
+          git add logs/leslies-log.csv
+          if git diff --cached --quiet; then
+            echo "No new test data."
+            exit 0
+          fi
+          git commit -m "Leslie's water test $(date '+%Y-%m-%d %H:%M %Z')"
+          git fetch origin "${GITHUB_REF_NAME}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-type: application/json" \
+            -d "{\"channel\":\"${{ secrets.SLACK_CHANNEL }}\",\"text\":\"❌ *Leslie's pull failed*\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"
