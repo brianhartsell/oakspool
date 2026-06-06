@@ -64,7 +64,10 @@ def _load_last_logged():
 
 def _is_duplicate(new, last):
     keys = [k for k in FIELDNAMES if k != "run_timestamp"]
-    return all(str(new.get(k, "")).strip() == str(last.get(k, "")).strip() for k in keys)
+    def _norm(v):
+        s = str(v).strip()
+        return "" if s in ("0", "0.0") else s  # old API used "0" as sentinel for missing data
+    return all(_norm(new.get(k, "")) == _norm(last.get(k, "")) for k in keys)
 
 
 def _append(data):
