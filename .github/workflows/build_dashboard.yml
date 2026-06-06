@@ -1,0 +1,55 @@
+name: Build Dashboard
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # midnight CDT — 1 hour after Flume pull
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    env:
+      SLACK_BOT_TOKEN:     ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL:       ${{ secrets.SLACK_CHANNEL }}
+      SLACK_BOARD_CHANNEL: ${{ secrets.SLACK_BOARD_CHANNEL }}
+      SLACK_HEARTBEAT_CHANNEL: ${{ secrets.SLACK_HEARTBEAT_CHANNEL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pytz requests python-dotenv
+
+      - name: Build dashboard HTML
+        run: python build_dashboard.py
+
+      - name: Commit HTML
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config user.name  github-actions
+          git config user.email github-actions@github.com
+          git add docs/index.html
+          if git diff --cached --quiet; then
+            echo "Dashboard unchanged."
+            exit 0
+          fi
+          git commit -m "Dashboard update $(date '+%Y-%m-%d')"
+          git fetch origin "${GITHUB_REF_NAME}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-type: application/json" \
+            -d "{\"channel\":\"${{ secrets.SLACK_CHANNEL }}\",\"text\":\"❌ *Dashboard build failed*\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"
