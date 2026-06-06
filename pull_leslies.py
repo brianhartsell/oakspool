@@ -169,6 +169,18 @@ def main():
     now = datetime.now(central)
     data["run_timestamp"] = now.strftime("%Y-%m-%d %H:%M:%S")
 
+    # Only log and notify for fresh tests. The Boomi API returns full history,
+    # so the first run after a gap would otherwise log last season's data.
+    days_since = data.get("days_since_test")
+    try:
+        is_fresh = int(days_since) <= 3
+    except (TypeError, ValueError):
+        is_fresh = True  # unknown — log anyway
+
+    if not is_fresh:
+        print(f"ℹ️ Test is {days_since} days old — skipping.")
+        return
+
     last = _load_last_logged()
     if _is_duplicate(data, last):
         print(f"ℹ️ Already logged test for {data['test_date']}, nothing new.")
@@ -176,18 +188,6 @@ def main():
 
     _append(data)
     print(f"✅ Logged new test: {data['test_date']}")
-
-    # Only notify Slack for fresh tests. The Boomi API returns full history, so
-    # the first run of a new season would otherwise notify for last season's data.
-    days_since = data.get("days_since_test")
-    try:
-        is_fresh = int(days_since) <= 3
-    except (TypeError, ValueError):
-        is_fresh = True  # unknown — notify anyway
-
-    if not is_fresh:
-        print(f"ℹ️ Test is {days_since} days old — skipping Slack notification.")
-        return
 
     summary = _build_summary(data)
     hour = now.strftime("%I").lstrip("0") or "12"
