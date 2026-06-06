@@ -58,8 +58,6 @@ jobs:
           git add docs/flume_usage_chart.png
           git add docs/flume_season_comparison.png
           git add logs/flume_usage_log.csv
-          git add heartbeats/flume_heartbeat_usage.log
-
           git add logs/leslies-log.csv
           git add docs/alkalinity.png
           git add docs/calcium.png

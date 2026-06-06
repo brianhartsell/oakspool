@@ -25,34 +25,11 @@ def format_usage_table(dates, values):
 
 SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
-HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 CSV_FILENAME = 'logs/flume_usage_log.csv'
-HEARTBEAT_LOG = "heartbeats/flume_heartbeat_usage.log"
 CCF_CONVERSION = 748.05
 
 central = pytz.timezone('US/Central')
 now = datetime.datetime.now(pytz.utc).astimezone(central)
-
-# === Heartbeat check and post (first run of the day)
-today_str = now.date().isoformat()
-
-already_sent = False
-if os.path.exists(HEARTBEAT_LOG):
-    with open(HEARTBEAT_LOG) as f:
-        already_sent = today_str in f.read()
-
-if not already_sent:
-    msg = f"❤️ Flume Updater ran {today_str} from GitHub."
-    payload = {
-        "channel": HEARTBEAT_CHANNEL,
-        "text": msg,
-        "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": msg}}]
-    }
-    requests.post("https://slack.com/api/chat.postMessage",
-                  headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
-                  json=payload)
-    with open(HEARTBEAT_LOG, "a") as f:
-        f.write(today_str + "\n")
 
 # === Authenticate with Flume
 headers, query_url = get_flume_connection()

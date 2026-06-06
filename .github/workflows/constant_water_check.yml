@@ -5,9 +5,6 @@ on:
     - cron: '*/30 * * * *'  # Every 30 minutes UTC
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   check-constant-water:
     runs-on: ubuntu-latest
@@ -37,15 +34,3 @@ jobs:
       - name: Run Flume constant water check
         run: python flume_constant_water_check.py
 
-      - name: Commit heartbeat file (if updated)
-        run: |
-          if git diff --quiet heartbeats/; then
-            echo "No update — skipping commit."
-          else
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git add heartbeats/
-            
-            git commit -m "Constant Use Check: ❤️ daily @ $(date -u)"
-            git push
-          fi

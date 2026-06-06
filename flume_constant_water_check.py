@@ -14,35 +14,17 @@ SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
 HEARTBEAT_CHANNEL = os.getenv("SLACK_HEARTBEAT_CHANNEL")
 CCF_CONVERSION = 748.05
-HEARTBEAT_LOG = "heartbeats/flume_heartbeat_constant.log"
 
 # === Local time and query range (NO UTC conversion)
 local_tz = ZoneInfo("America/Chicago")
 now = datetime.datetime.now(local_tz)
 since_dt = now - datetime.timedelta(hours=4)
-today_str = now.date().isoformat()
 
 since = since_dt.strftime('%Y-%m-%dT%H:%M:%S')
 until = now.strftime('%Y-%m-%dT%H:%M:%S')
 
 print("Local range:", since_dt.strftime('%Y-%m-%d %H:%M:%S'), "→", now.strftime('%Y-%m-%d %H:%M:%S'))
 print("Formatted for Flume:", since, "→", until)
-
-# === Heartbeat (log once per day)
-already_sent = os.path.exists(HEARTBEAT_LOG) and today_str in open(HEARTBEAT_LOG).read()
-if not already_sent:
-    msg = f"❤️ Constant water check is running on {today_str} from GitHub."
-    if not SILENT_MODE:
-        payload = {
-            "channel": HEARTBEAT_CHANNEL,
-            "text": msg,
-            "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": msg}}]
-        }
-        requests.post("https://slack.com/api/chat.postMessage",
-                      headers={"Authorization": f"Bearer {SLACK_TOKEN}", "Content-Type": "application/json"},
-                      json=payload)
-    with open(HEARTBEAT_LOG, "a") as f:
-        f.write(today_str + "\n")
 
 # === Flume auth
 headers, query_url = get_flume_connection()
