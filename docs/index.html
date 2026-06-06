@@ -41,6 +41,9 @@ li { margin: 4px 0; line-height: 1.5; }
 .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; }
 .stat-val { font-size: 22px; font-weight: 700; color: #1a6b6c; margin-top: 3px; }
 .updated { color: #888; font-size: 12px; margin-top: 20px; }
+.status.off  { background: #e9ecef; color: #495057; }
+.notice { background: #e9ecef; border-left: 3px solid #aaa; padding: 8px 14px;
+          margin: 0 0 16px; border-radius: 3px; font-size: 13px; color: #495057; }
 </style>
   <script>
 function showTab(id) {
@@ -125,19 +128,13 @@ window.onload = function() { showTab('water'); };
 <img src="iron.png"         alt="Iron">
 </div>
 <div id="pumphouse" class="tab-pane">
-<div class="status ok">RPi last seen: 49 min ago</div>
+<div class="status ok">RPi last seen: 0 min ago</div>
 
 <div class="stats">
   <div class="stat"><div class="stat-label">Flow (gpm)</div>
-    <div class="stat-val">162.0</div></div>
+    <div class="stat-val">200.0</div></div>
   <div class="stat"><div class="stat-label">24h Avg Flow</div>
-    <div class="stat-val">173.6</div></div>
-  <div class="stat"><div class="stat-label">Vac Press (psi)</div>
-    <div class="stat-val">—</div></div>
-  <div class="stat"><div class="stat-label">Sys Press (psi)</div>
-    <div class="stat-val">—</div></div>
-  <div class="stat"><div class="stat-label">F1 Press (psi)</div>
-    <div class="stat-val">—</div></div>
+    <div class="stat-val">174.6</div></div>
 </div>
 <h3>Flow – Last 7 Days</h3>
 <img src="flow_7d.png" alt="7-day flow rate">
@@ -145,11 +142,13 @@ window.onload = function() { showTab('water'); };
 <img src="flow_30d.png" alt="30-day flow rate">
 <h3>Pressures and Flow – Last 30 Days</h3>
 <img src="press.png" alt="Pressure and flow">
-<h3>Recent Readings (last 63 entries)</h3>
+<h3>Recent Readings (last 65 entries)</h3>
 <table>
   <thead><tr><th>Time (CT)</th><th>Flow (gpm)</th><th>Vac (psi)</th>
              <th>Sys (psi)</th><th>F1 (psi)</th></tr></thead>
-  <tbody><tr><td>06/06 08:00</td><td>162.00</td><td>—</td><td>—</td><td>—</td></tr>
+  <tbody><tr><td>06/06 10:00</td><td>200.00</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>06/06 09:00</td><td>165.00</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>06/06 08:00</td><td>162.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>06/06 07:00</td><td>177.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>06/06 06:00</td><td>177.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>06/06 05:00</td><td>176.00</td><td>—</td><td>—</td><td>—</td></tr>
@@ -247,13 +246,15 @@ window.onload = function() { showTab('water'); };
 </table>
 </div>
 
-<h3>Pump House / Flow — last 7 days (40 readings)</h3>
+<h3>Pump House / Flow — last 7 days (42 readings)</h3>
 <table>
   <thead>
     <tr><th>Timestamp (CT)</th><th>Flow (gpm)</th><th>Vac Press (psi)</th>
         <th>Sys Press (psi)</th><th>F1 Press (psi)</th></tr>
   </thead>
-  <tbody><tr><td>2026-06-06 08:00:11</td><td>162.00</td><td>—</td><td>—</td><td>—</td></tr>
+  <tbody><tr><td>2026-06-06 10:00:11</td><td>200.00</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>2026-06-06 09:00:11</td><td>165.00</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>2026-06-06 08:00:11</td><td>162.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>2026-06-06 07:00:12</td><td>177.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>2026-06-06 06:00:10</td><td>177.00</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>2026-06-06 05:00:10</td><td>176.00</td><td>—</td><td>—</td><td>—</td></tr>
