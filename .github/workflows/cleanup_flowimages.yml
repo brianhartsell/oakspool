@@ -6,13 +6,16 @@ on:
     - cron: '0 3 * * *'  # runs daily at 3am
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
       - name: Delete flow images older than 7 days
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           CUTOFF=$(date -d '7 days ago' +%s)
           
