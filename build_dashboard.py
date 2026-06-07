@@ -457,7 +457,7 @@ def main():
 
     if today.weekday() == 6:  # Sunday only — post to both channels
         # Only notify on the scheduled run, not every workflow_run trigger
-        if os.getenv("GITHUB_EVENT_NAME", "schedule") != "workflow_run":
+        if os.getenv("GITHUB_EVENT_NAME") == "schedule":
             msg = "Dashboard updated: https://brianhartsell.github.io/oakspool/"
             for ch in [SLACK_CHANNEL, SLACK_BOARD_CH]:
                 _post_slack(ch, msg)
