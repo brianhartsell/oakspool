@@ -1,4 +1,3 @@
-# .github/workflows/cleanup_flowimages.yml
 name: Cleanup old flow images
 
 on:
@@ -12,25 +11,42 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+
     steps:
+      - uses: actions/checkout@v4
+
       - name: Delete flow images older than 7 days
+        run: |
+          git config user.name  github-actions
+          git config user.email github-actions@github.com
+
+          CUTOFF=$(date -d '7 days ago' +%s)
+          DELETED=0
+
+          for f in flowimages/flow_*.jpg; do
+            [ -f "$f" ] || continue
+            fname=$(basename "$f")
+            file_date=$(echo "$fname" | grep -oP '\d{4}-\d{2}-\d{2}')
+            [ -z "$file_date" ] && continue
+            FILE_TS=$(date -d "$file_date" +%s 2>/dev/null) || continue
+            if [ "$FILE_TS" -lt "$CUTOFF" ]; then
+              echo "Deleting $fname ($file_date)"
+              git rm "$f"
+              DELETED=$((DELETED + 1))
+            fi
+          done
+
+          if [ "$DELETED" -eq 0 ]; then
+            echo "Nothing to clean up."
+            exit 0
+          fi
+
+          git commit -m "Cleanup $DELETED flow image(s) older than 7 days"
+
+      - name: Push
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          CUTOFF=$(date -d '7 days ago' +%s)
-          
-          gh api repos/${{ github.repository }}/contents/flowimages \
-            --jq '.[] | select(.type == "file") | .name + " " + .sha' | \
-          while read name sha; do
-            # Get commit date for this file
-            FILE_DATE=$(gh api "repos/${{ github.repository }}/commits?path=flowimages/$name&per_page=1" \
-              --jq '.[0].commit.committer.date' | xargs -I{} date -d {} +%s)
-            
-            if [ "$FILE_DATE" -lt "$CUTOFF" ]; then
-              echo "Deleting $name"
-              gh api repos/${{ github.repository }}/contents/flowimages/$name \
-                -X DELETE \
-                -f message="cleanup $name" \
-                -f sha=$sha
-            fi
-          done
+          git fetch origin "${GITHUB_REF_NAME}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD
