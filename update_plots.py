@@ -244,10 +244,22 @@ def plot_flow(days, out_path):
         print(f"  ⚠️  No flow data in last {days} days")
         return
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(df["read_datetime"], df["flow"], color="royalblue", linewidth=1.2)
+    if "flow_std" in df.columns:
+        df["flow_std"] = pd.to_numeric(df["flow_std"], errors="coerce")
+        mask = df["flow"].notna() & df["flow_std"].notna()
+        if mask.any():
+            ax.fill_between(
+                df["read_datetime"],
+                df["flow"] - df["flow_std"],
+                df["flow"] + df["flow_std"],
+                where=mask, alpha=0.25, color="lightgreen",
+                label="±1σ", interpolate=False,
+            )
+    ax.plot(df["read_datetime"], df["flow"], color="royalblue", linewidth=1.2, label="Flow")
     ax.set_xlabel("Date")
     ax.set_ylabel("Flow Rate [gpm]")
     ax.set_title(f"Flow Rate – Last {days} Days")
+    ax.legend(fontsize=9)
     ax.grid(True, alpha=0.4)
     fig.autofmt_xdate(rotation=60)
     plt.tight_layout()

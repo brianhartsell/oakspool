@@ -34,7 +34,7 @@ dashboard with Slack notifications.
 |---|---|---|
 | `logs/flume_usage_log.csv` | `date,ccf` | One row per day; atomic write via .tmp + os.replace |
 | `logs/leslies-log.csv` | `run_timestamp,test_date,free_chlorine,...` (13 cols) | Append-only, deduplicated on all non-timestamp fields |
-| `logs/flow.csv` | `read_datetime,vac_press,sys_press,f1_press,flow` | RPi pushes directly; timestamps are naive US/Central |
+| `logs/flow.csv` | `read_datetime,vac_press,sys_press,f1_press,flow,notes,flow_std` | RPi pushes directly; timestamps are naive US/Central; `flow_std` is 30-second std dev |
 | `seasons.txt` | `year open_m open_d close_m close_d rate` | Source of truth for season dates and CCF water rates |
 
 ### Workflows

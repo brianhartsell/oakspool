@@ -145,11 +145,12 @@ def _load_flow(cutoff_dt=None):
             if cutoff_dt and dt < cutoff_dt:
                 continue
             rows.append({
-                "dt": dt,
-                "flow": _safe_float(r.get("flow")),
-                "vac":  _safe_float(r.get("vac_press")),
-                "sys":  _safe_float(r.get("sys_press")),
-                "f1":   _safe_float(r.get("f1_press")),
+                "dt":       dt,
+                "flow":     _safe_float(r.get("flow")),
+                "flow_std": _safe_float(r.get("flow_std")),
+                "vac":      _safe_float(r.get("vac_press")),
+                "sys":      _safe_float(r.get("sys_press")),
+                "f1":       _safe_float(r.get("f1_press")),
             })
     return sorted(rows, key=lambda x: x["dt"])
 

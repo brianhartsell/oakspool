@@ -1,4 +1,4 @@
-read_datetime,vac_press,sys_press,f1_press,flow,notes
+read_datetime,vac_press,sys_press,f1_press,flow,notes,flow_std
 2025-08-12 17:00:00,8,23,21,,
 2025-08-13 20:00:00,9,19,16,250,
 2025-08-14 20:00:00,8,21,18.5,210,
