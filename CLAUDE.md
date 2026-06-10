@@ -15,7 +15,7 @@ dashboard with Slack notifications.
 | Script | Purpose | Inputs | Outputs |
 |---|---|---|---|
 | `pull_flume.py` | Nightly Flume pull | Flume API | `logs/flume_usage_log.csv` |
-| `pull_leslies.py` | Per-run Leslie's pull | Leslie's HTML | `logs/leslies-log.csv`, Slack |
+| `pull_leslies.py` | Per-run Leslie's pull | Leslie's Boomi API | `logs/leslies-log.csv`, Slack |
 | `check_flow.py` | 30-min leak check | Flume API | Slack alert if ≥95% non-zero flow |
 | `update_plots.py` | Regenerate all PNGs | All CSVs | `docs/*.png` |
 | `build_dashboard.py` | Build HTML dashboard | All CSVs + PNGs | `docs/index.html`, Slack Sunday |
@@ -25,7 +25,7 @@ dashboard with Slack notifications.
 | Module | Purpose |
 |---|---|
 | `flume_auth.py` | Flume OAuth (password grant) → returns `(headers, query_url)` |
-| `leslies_api.py` | `LesliesPoolApi` class — authenticate + fetch water test HTML |
+| `leslies_api.py` | `LesliesPoolApi` class — Boomi mobile API auth + fetch water test data |
 | `seasons_loader.py` | Reads `seasons.txt` → `Season` dataclasses; `get_rate()`, `get_current_season()` |
 
 ### Data files (committed)
@@ -52,16 +52,6 @@ dashboard with Slack notifications.
 `update_plots.yml` fires automatically when any of the three CSVs change on main (including
 RPi pushes to `logs/flow.csv`). `build_dashboard.yml` then fires via `workflow_run` once
 plots complete, so tables and charts are always in sync.
-
-### Old workflows/scripts (disabled — pending deletion)
-
-These have been replaced and their schedule/dispatch triggers are commented out. Delete once
-the new workflows have been running cleanly for a full season.
-
-- `.github/workflows/telemetry.yml` → replaced by `pull_flume.yml`, `pull_leslies.yml`, `update_plots.yml`, `build_dashboard.yml`
-- `.github/workflows/medium_checks.yml` → replaced by `pull_leslies.yml`, `update_plots.yml`
-- `.github/workflows/constant_water_check.yml` → replaced by `check_flow.yml`
-- `flume_water_use.py`, `leslies-log-and-plot.py`, `dashboard_update.py`, `pumphouse.py`, `api.py`, `flume_constant_water_check.py`
 
 ---
 
@@ -107,11 +97,11 @@ US/Central — do not apply tzinfo when reading them.
 `leslies-log.csv` → `test_date` is `MM/DD/YYYY`, `run_timestamp` is `YYYY-MM-DD HH:MM:SS`.
 `flow.csv` → `read_datetime` is `YYYY-MM-DD HH:MM:SS`. Do not swap readers between files.
 
-### Leslie's is fragile HTML scraping
-`leslies_api.py` parses specific CSS class names from Leslie's DOM. A page redesign will break
-it silently. `pull_leslies.py` validates required fields (`test_date`, `free_chlorine`,
-`total_chlorine`, `ph`) and returns cleanly (not an error) when they're absent — this is
-normal at pool open before the first test of the season.
+### Leslie's uses the Boomi mobile API
+`leslies_api.py` calls `api.lesl.cloud` (the Leslie's iOS app backend). Constants are inlined
+from Connor Gallopo's `leslies-pool` HA integration. `pull_leslies.py` gates logging on
+`days_since_test <= 3` to avoid re-logging historical records. Required fields (`test_date`,
+`free_chlorine`, `total_chlorine`, `ph`) are validated and the script exits cleanly when absent.
 
 ### Flume password grant is legacy OAuth
 `flume_auth.py` uses `grant_type=password`. If Flume sunsets this endpoint the auth will
