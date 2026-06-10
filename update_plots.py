@@ -17,7 +17,7 @@ FLUME_CSV  = "logs/flume_usage_log.csv"
 LESLIES_CSV = "logs/leslies-log.csv"
 FLOW_CSV   = "logs/flow.csv"
 
-FLOW_STD_SCALE = 5  # multiply σ for visibility — pure visual aid, not a confidence interval
+FLOW_STD_SCALE = 10  # multiply σ for visibility — pure visual aid, not a confidence interval
 
 TARGET_RANGES = {
     "free_chlorine":  (1, 4),
@@ -254,7 +254,7 @@ def plot_flow(days, out_path):
                 df["read_datetime"],
                 df["flow"] - df["flow_std"] * FLOW_STD_SCALE,
                 df["flow"] + df["flow_std"] * FLOW_STD_SCALE,
-                where=mask, alpha=0.25, color="lightgreen",
+                where=mask, alpha=0.35, color="hotpink",
                 label=f"±{FLOW_STD_SCALE}σ", interpolate=False,
             )
     ax.plot(df["read_datetime"], df["flow"], color="royalblue", linewidth=1.2, label="Flow")
