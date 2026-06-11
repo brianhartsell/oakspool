@@ -301,7 +301,8 @@ def _pumphouse_tab(now_ct, current_season=None):
     table_rows_data = all_flow[-FLOW_TABLE_ROWS:][::-1]
     table_rows_html = "\n".join(
         f"<tr><td>{r['dt'].strftime('%m/%d %H:%M')}</td>"
-        f"{_td(r['flow'], '%.2f')}{_td(r['vac'], '%.1f')}"
+        f"{_td(r['flow'], '%.2f')}{_td(r['flow_std'], '%.2f')}"
+        f"{_td(r['vac'], '%.1f')}"
         f"{_td(r['sys'], '%.1f')}{_td(r['f1'], '%.1f')}</tr>"
         for r in table_rows_data
     )
@@ -317,7 +318,7 @@ def _pumphouse_tab(now_ct, current_season=None):
 <img src="press.png" alt="Pressure and flow">
 <h3>Recent Readings (last {len(table_rows_data)} entries)</h3>
 <table>
-  <thead><tr><th>Time (CT)</th><th>Flow (gpm)</th><th>Vac (psi)</th>
+  <thead><tr><th>Time (CT)</th><th>Flow (gpm)</th><th>σ (gpm)</th><th>Vac (psi)</th>
              <th>Sys (psi)</th><th>F1 (psi)</th></tr></thead>
   <tbody>{table_rows_html}</tbody>
 </table>
@@ -397,7 +398,8 @@ def _raw_tab(today):
     flow_rows = _load_flow(cutoff_dt=flow_cutoff)
     flow_html = "\n".join(
         f"<tr><td>{r['dt'].strftime('%Y-%m-%d %H:%M:%S')}</td>"
-        f"{_td(r['flow'], '%.2f')}{_td(r['vac'], '%.1f')}"
+        f"{_td(r['flow'], '%.2f')}{_td(r['flow_std'], '%.2f')}"
+        f"{_td(r['vac'], '%.1f')}"
         f"{_td(r['sys'], '%.1f')}{_td(r['f1'], '%.1f')}</tr>"
         for r in reversed(flow_rows)
     )
@@ -405,8 +407,8 @@ def _raw_tab(today):
 <h3>Pump House / Flow — last 7 days ({len(flow_rows)} readings)</h3>
 <table>
   <thead>
-    <tr><th>Timestamp (CT)</th><th>Flow (gpm)</th><th>Vac Press (psi)</th>
-        <th>Sys Press (psi)</th><th>F1 Press (psi)</th></tr>
+    <tr><th>Timestamp (CT)</th><th>Flow (gpm)</th><th>σ (gpm)</th>
+        <th>Vac Press (psi)</th><th>Sys Press (psi)</th><th>F1 Press (psi)</th></tr>
   </thead>
   <tbody>{flow_html}</tbody>
 </table>""")
