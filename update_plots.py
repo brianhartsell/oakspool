@@ -68,15 +68,32 @@ def _chem_bands(ax, key):
         ax.axhspan(target[0], target[1], alpha=0.18, color="green", linewidth=0)
 
 
+def _season_range():
+    """Return (start, end) dates for the plot window: current season, or most recent past season."""
+    central = pytz.timezone("US/Central")
+    today = datetime.datetime.now(pytz.utc).astimezone(central).date()
+    current = get_current_season(today)
+    if current:
+        return current.open, today
+    seasons = load()
+    if seasons:
+        last = max(seasons, key=lambda s: s.close)
+        return last.open, last.close
+    return None, None
+
+
 def _load_leslies():
     if not os.path.exists(LESLIES_CSV):
         return pd.DataFrame()
+    start, end = _season_range()
     rows = []
     with open(LESLIES_CSV, newline="") as f:
         for r in csv.DictReader(f):
             try:
                 d = datetime.datetime.strptime(r["test_date"], "%m/%d/%Y").date()
             except ValueError:
+                continue
+            if start and (d < start or d > end):
                 continue
             row = {"test_date": d}
             for key in TARGET_RANGES:
