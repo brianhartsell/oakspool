@@ -18,6 +18,37 @@ LESLIES_CSV = "logs/leslies-log.csv"
 FLOW_CSV   = "logs/flow.csv"
 
 FLOW_STD_SCALE = 10  # multiply σ for visibility — pure visual aid, not a confidence interval
+GAP_THRESHOLD  = pd.Timedelta(hours=2)  # gaps wider than this break the line
+
+
+def _insert_gap_breakers(df, time_col="read_datetime"):
+    """Insert NaN rows where consecutive timestamps are >GAP_THRESHOLD apart.
+
+    This breaks matplotlib's line so gaps don't get interpolated visually.
+    Returns (df_with_breaks, list_of_(gap_start, gap_end) tuples).
+    """
+    df = df.sort_values(time_col).reset_index(drop=True)
+    diffs = df[time_col].diff()
+    gap_mask = diffs > GAP_THRESHOLD
+    gaps = []
+    nan_rows = []
+    for idx in df.index[gap_mask]:
+        gap_start = df.loc[idx - 1, time_col]
+        gap_end = df.loc[idx, time_col]
+        gaps.append((gap_start, gap_end))
+        mid = gap_start + (gap_end - gap_start) / 2
+        nan_row = {c: float("nan") if c != time_col else mid for c in df.columns}
+        nan_rows.append(nan_row)
+    if nan_rows:
+        df = pd.concat([df, pd.DataFrame(nan_rows)], ignore_index=True)
+        df = df.sort_values(time_col).reset_index(drop=True)
+    return df, gaps
+
+
+def _shade_gaps(ax, gaps):
+    for start, end in gaps:
+        ax.axvspan(start, end, alpha=0.10, color="gray", linewidth=0)
+
 
 TARGET_RANGES = {
     "free_chlorine":  (1, 4),
@@ -262,7 +293,9 @@ def plot_flow(days, out_path):
     if df.empty:
         print(f"  ⚠️  No flow data in last {days} days")
         return
+    df, gaps = _insert_gap_breakers(df)
     fig, ax = plt.subplots(figsize=(10, 4))
+    _shade_gaps(ax, gaps)
     if "flow_std" in df.columns:
         df["flow_std"] = pd.to_numeric(df["flow_std"], errors="coerce")
         mask = df["flow"].notna() & df["flow_std"].notna()
@@ -299,7 +332,9 @@ def plot_pressure(out_path):
     df["combined_press"] = df["vac_press"] + df["sys_press"]
     if df.empty:
         return
+    df, gaps = _insert_gap_breakers(df)
     fig, ax1 = plt.subplots(figsize=(10, 4))
+    _shade_gaps(ax1, gaps)
     ax1.plot(df["read_datetime"], df["combined_press"],
              color="red", linewidth=1, label="Vac + Sys Pressure")
     ax1.scatter(df["read_datetime"], df["combined_press"], color="red", s=15)
