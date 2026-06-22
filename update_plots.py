@@ -25,11 +25,13 @@ def _insert_gap_breakers(df, time_col="read_datetime"):
     """Insert NaN rows where consecutive timestamps are >GAP_THRESHOLD apart.
 
     This breaks matplotlib's line so gaps don't get interpolated visually.
+    Only flags gaps in hourly-cadence data (2026-06-19 onward).
     Returns (df_with_breaks, list_of_(gap_start, gap_end) tuples).
     """
+    hourly_start = pd.Timestamp("2026-06-19")
     df = df.sort_values(time_col).reset_index(drop=True)
     diffs = df[time_col].diff()
-    gap_mask = diffs > GAP_THRESHOLD
+    gap_mask = (diffs > GAP_THRESHOLD) & (df[time_col] >= hourly_start)
     gaps = []
     nan_rows = []
     for idx in df.index[gap_mask]:
