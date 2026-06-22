@@ -47,7 +47,7 @@ def _insert_gap_breakers(df, time_col="read_datetime"):
 
 def _shade_gaps(ax, gaps):
     for start, end in gaps:
-        ax.axvspan(start, end, alpha=0.10, color="gray", linewidth=0)
+        ax.axvspan(start, end, alpha=0.15, color="lightsalmon", linewidth=0)
 
 
 TARGET_RANGES = {
