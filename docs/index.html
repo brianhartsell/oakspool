@@ -86,7 +86,8 @@ window.onload = function() { showTab('summary'); };
 <h3>Last 30 Days of Use</h3>
 <table>
   <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
-  <tbody><tr><td>2026-07-11</td><td>0.000</td><td>$0.00</td></tr>
+  <tbody><tr><td>2026-07-12</td><td>0.000</td><td>$0.00</td></tr>
+<tr><td>2026-07-11</td><td>1.044</td><td>$7.36</td></tr>
 <tr><td>2026-07-10</td><td>8.396</td><td>$59.19</td></tr>
 <tr><td>2026-07-09</td><td>4.558</td><td>$32.13</td></tr>
 <tr><td>2026-07-08</td><td>2.986</td><td>$21.05</td></tr>
@@ -114,18 +115,17 @@ window.onload = function() { showTab('summary'); };
 <tr><td>2026-06-16</td><td>0.119</td><td>$0.84</td></tr>
 <tr><td>2026-06-15</td><td>0.277</td><td>$1.95</td></tr>
 <tr><td>2026-06-14</td><td>7.344</td><td>$51.78</td></tr>
-<tr><td>2026-06-13</td><td>0.615</td><td>$4.34</td></tr>
-<tr><td>2026-06-12</td><td>0.751</td><td>$5.29</td></tr></tbody>
+<tr><td>2026-06-13</td><td>0.615</td><td>$4.34</td></tr></tbody>
 </table>
 
 <h3>Season Usage Summary</h3>
 <ul>
-  <li><strong>Cost so far:</strong> $1,314.28
-      (186.4 CCF @ $7.05/CCF)</li>
-  <li><strong>Projected remaining:</strong> $1,865.57
-      (4.49 CCF/day × 59 days remaining)</li>
+  <li><strong>Cost so far:</strong> $1,321.64
+      (187.5 CCF @ $7.05/CCF)</li>
+  <li><strong>Projected remaining:</strong> $1,837.95
+      (4.49 CCF/day × 58 days remaining)</li>
 </ul>
-<p class="updated">Dashboard updated 2026-07-11</p>
+<p class="updated">Dashboard updated 2026-07-12</p>
 </div>
 <div id="chemicals" class="tab-pane">
 <h3>Chemical History</h3>
@@ -142,7 +142,7 @@ window.onload = function() { showTab('summary'); };
 <img src="iron.png"         alt="Iron">
 </div>
 <div id="pumphouse" class="tab-pane">
-<div class="status ok">RPi last seen: 0 min ago</div>
+<div class="status warn">RPi last seen: 10.5 h ago</div>
 
 <div class="stats">
   <div class="stat"><div class="stat-label">Flow (gpm)</div>
@@ -259,10 +259,11 @@ window.onload = function() { showTab('summary'); };
 </table>
 </div>
 <div id="raw"       class="tab-pane">
-<h3>Water Usage — 2026 season (2026-05-23 – 2026-09-07) (50 days)</h3>
+<h3>Water Usage — 2026 season (2026-05-23 – 2026-09-07) (51 days)</h3>
 <table>
   <thead><tr><th>Date</th><th>Usage (CCF)</th><th>Cost ($)</th></tr></thead>
-  <tbody><tr><td>2026-07-11</td><td>0.000</td><td>$0.00</td></tr>
+  <tbody><tr><td>2026-07-12</td><td>0.000</td><td>$0.00</td></tr>
+<tr><td>2026-07-11</td><td>1.044</td><td>$7.36</td></tr>
 <tr><td>2026-07-10</td><td>8.396</td><td>$59.19</td></tr>
 <tr><td>2026-07-09</td><td>4.558</td><td>$32.13</td></tr>
 <tr><td>2026-07-08</td><td>2.986</td><td>$21.05</td></tr>
@@ -327,7 +328,7 @@ window.onload = function() { showTab('summary'); };
 </table>
 </div>
 
-<h3>Pump House / Flow — last 7 days (60 readings)</h3>
+<h3>Pump House / Flow — last 7 days (50 readings)</h3>
 <table>
   <thead>
     <tr><th>Timestamp (CT)</th><th>Flow (gpm)</th><th>σ (gpm)</th>
@@ -382,17 +383,7 @@ window.onload = function() { showTab('summary'); };
 <tr><td>2026-07-05 11:00:31</td><td>239.00</td><td>1.50</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>2026-07-05 10:00:29</td><td>240.00</td><td>1.10</td><td>—</td><td>—</td><td>—</td></tr>
 <tr><td>2026-07-05 09:00:31</td><td>242.00</td><td>1.50</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 08:00:30</td><td>242.00</td><td>1.10</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 07:00:30</td><td>242.00</td><td>2.40</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 06:00:31</td><td>242.00</td><td>1.70</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 05:00:31</td><td>280.00</td><td>14.30</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 04:00:30</td><td>297.00</td><td>1.00</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 03:00:30</td><td>297.00</td><td>0.00</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 02:00:30</td><td>295.00</td><td>1.10</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 01:00:31</td><td>290.00</td><td>0.80</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-05 00:00:29</td><td>290.00</td><td>0.40</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-04 23:00:29</td><td>288.00</td><td>0.70</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>2026-07-04 22:00:29</td><td>285.00</td><td>1.30</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+<tr><td>2026-07-05 08:00:30</td><td>242.00</td><td>1.10</td><td>—</td><td>—</td><td>—</td></tr></tbody>
 </table></div>
 </body>
 </html>
